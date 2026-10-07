@@ -1544,20 +1544,7 @@ h1, h2, h3, h4, h5 {
   flex: 1;
   height: 2px;
   background: linear-gradient(90deg, transparent, var(--primary), transparent);
-  opacity: 0.35;
-}
-
-.divider-badge {
-  background: linear-gradient(135deg, var(--primary) 0%, #0d47a1 100%);
-  color: #fff;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  padding: 0.45rem 1.2rem;
-  border-radius: 999px;
-  white-space: nowrap;
-  box-shadow: 0 2px 12px rgba(21, 101, 192, 0.35);
-  text-transform: uppercase;
+  opacity: 0.5;
 }
 
 .hidden-section {
