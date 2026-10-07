@@ -2552,7 +2552,7 @@ function generarPDFConsolidado() {
     <div class="pdf-report-page">
       <div class="pdf-header">
         <div class="pdf-title-main">SOFTWARE DE MECÁNICA DE SUELOS</div>
-        <div class="pdf-title-sub">INFORME GENERAL CONSOLIDADO – LABORATORIO N.º 1</div>
+        <div class="pdf-title-sub">INFORME GENERAL DEL LABORATORIO N.º 1</div>
         <div class="pdf-norm-ref">Propiedades Índice y Relaciones Físicas Fundamentales (ASTM D2216 / D854 / NTP 339)</div>
       </div>
 
@@ -2684,7 +2684,7 @@ function generarPDFConsolidadoLab2() {
     <div class="pdf-report-page">
       <div class="pdf-header">
         <div class="pdf-title-main">SOFTWARE DE MECÁNICA DE SUELOS • GEOLOGÍA FIGMM</div>
-        <div class="pdf-title-sub">INFORME TÉCNICO OFICIAL – LABORATORIO N.º 2: ANÁLISIS GRANULOMÉTRICO</div>
+        <div class="pdf-title-sub">INFORME GENERAL DEL LABORATORIO N.º 2</div>
         <div class="pdf-norm-ref">Normas de referencia: ASTM D6913 / D6913M • NTP 339.128 • Formato Oficial UNI FIC</div>
       </div>
 
