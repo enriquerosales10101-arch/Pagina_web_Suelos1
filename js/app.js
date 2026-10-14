@@ -1224,6 +1224,11 @@ function initDashboardEvents() {
       showToast("Cálculos y relaciones geotécnicas sincronizadas.");
     });
   }
+
+  const btnExportGeneral = document.getElementById("btn-exportar-general");
+  if (btnExportGeneral) {
+    btnExportGeneral.addEventListener("click", generarPDFGeneral);
+  }
 }
 
 function updateDashboardPills() {
@@ -1526,6 +1531,19 @@ function initGranulometriaEvents() {
   if (w1Input) w1Input.addEventListener("input", updatePerdidaLive);
   if (w0Input) w0Input.addEventListener("input", updatePerdidaLive);
 
+  // Factor de cuarteo k = peso total / peso porción (en vivo)
+  const ctTotal = document.getElementById("granu-cuarteo-total");
+  const ctPorcion = document.getElementById("granu-cuarteo-porcion");
+  const updateFactorK = () => {
+    const t = parseFloat(ctTotal ? ctTotal.value : 0) || 0;
+    const p = parseFloat(ctPorcion ? ctPorcion.value : 0) || 0;
+    const k = (t > 0 && p > 0) ? t / p : 1.0;
+    const el = document.getElementById("granu-factor-k");
+    if (el) el.textContent = `k = ${k.toFixed(4)}`;
+  };
+  if (ctTotal) ctTotal.addEventListener("input", updateFactorK);
+  if (ctPorcion) ctPorcion.addEventListener("input", updateFactorK);
+
   document.getElementById("btn-calcular-granu").addEventListener("click", calcularGranulometria);
   document.getElementById("btn-limpiar-granu").addEventListener("click", limpiarGranulometria);
   document.getElementById("btn-fill-demo-granu-simple").addEventListener("click", cargarDemoGranuSimple);
@@ -1554,6 +1572,9 @@ function renderGranulometriaTable() {
         <td>
           <input type="number" step="0.01" class="input-control font-mono" id="granu-ret-${s.id}" placeholder="0.00" value="0.00">
         </td>
+        <td>
+          <input type="number" step="0.01" class="input-control font-mono" id="granu-ret2-${s.id}" placeholder="0.00" value="0.00">
+        </td>
       </tr>
     `;
   });
@@ -1579,19 +1600,30 @@ function calcularGranulometria() {
     const perdida_lavado = w1 - w0;
     const porc_perdida_lavado = (perdida_lavado / w1) * 100.0;
 
+    // Factor de cuarteo (k = peso total / peso porción cuarteada; 1 si no se cuartea)
+    const ctTotalVal = parseFloat((document.getElementById("granu-cuarteo-total") || {}).value) || 0;
+    const ctPorcionVal = parseFloat((document.getElementById("granu-cuarteo-porcion") || {}).value) || 0;
+    const factor_k = (ctTotalVal > 0 && ctPorcionVal > 0) ? (ctTotalVal / ctPorcionVal) : 1.0;
+
     let suma_retenido = 0;
     const items = [];
 
     ASTM_SIEVES.forEach(s => {
-      const input = document.getElementById(`granu-ret-${s.id}`);
-      const val = input ? parseFloat(input.value) : 0;
-      const ret = isNaN(val) || val < 0 ? 0 : val;
+      const in1 = document.getElementById(`granu-ret-${s.id}`);
+      const in2 = document.getElementById(`granu-ret2-${s.id}`);
+      let m1 = in1 ? parseFloat(in1.value) : 0;
+      m1 = isNaN(m1) || m1 < 0 ? 0 : m1;
+      let m2 = in2 ? parseFloat(in2.value) : 0;
+      m2 = isNaN(m2) || m2 < 0 ? 0 : m2;
+      const ret = m1 + m2 * factor_k; // retenido efectivo escalado a la muestra completa
       suma_retenido += ret;
       items.push({
         id: s.id,
         nombre: s.nombre,
         abertura: s.abertura,
         desc: s.desc,
+        m1,
+        m2,
         retenido: ret
       });
     });
@@ -1733,6 +1765,9 @@ function calcularGranulometria() {
       sucs_simbolo,
       sucs_descripcion: sucs_desc,
       observaciones: obs,
+      factor_k,
+      cuarteo_total: ctTotalVal,
+      cuarteo_porcion: ctPorcionVal,
       encabezado: capturarEncabezadoGranu()
     };
 
@@ -1783,8 +1818,9 @@ function renderResultadosGranulometria() {
   document.getElementById("granu-res-gradacion-eval").textContent = evalGrad;
 
   const errStatus = g.porc_error <= 1.0 ? '✅ Conforme (&le; 1.0%)' : '⚠️ No conforme (&gt; 1.0%)';
+  const kInfo = (g.factor_k && g.factor_k !== 1) ? ` • Factor de cuarteo k = ${g.factor_k.toFixed(4)}` : "";
   document.getElementById("granu-res-error-text").textContent =
-    `ΔError = ${g.porc_error.toFixed(2)} % (${g.error_gramos.toFixed(2)} g) • Retenido sumado: ${g.suma_retenido.toFixed(2)} g • Tolerancia ASTM D6913: ${errStatus}`;
+    `ΔError = ${g.porc_error.toFixed(2)} % (${g.error_gramos.toFixed(2)} g) • Retenido sumado: ${g.suma_retenido.toFixed(2)} g${kInfo} • Tolerancia ASTM D6913: ${errStatus}`;
 
   const tbody = document.getElementById("tbody-granu-breakdown");
   tbody.innerHTML = "";
@@ -1894,9 +1930,18 @@ function limpiarGranulometria() {
   document.getElementById("granu-masa-lavada").value = "";
   document.getElementById("granu-obs").value = "";
 
+  const ctTotal = document.getElementById("granu-cuarteo-total");
+  if (ctTotal) ctTotal.value = "";
+  const ctPorcion = document.getElementById("granu-cuarteo-porcion");
+  if (ctPorcion) ctPorcion.value = "";
+  const kEl = document.getElementById("granu-factor-k");
+  if (kEl) kEl.textContent = "k = 1.0000";
+
   ASTM_SIEVES.forEach(s => {
     const input = document.getElementById(`granu-ret-${s.id}`);
     if (input) input.value = "0.00";
+    const input2 = document.getElementById(`granu-ret2-${s.id}`);
+    if (input2) input2.value = "0.00";
   });
 
   const perdidaEl = document.getElementById("granu-live-perdida");
@@ -1940,11 +1985,21 @@ function cargarDemoGranuSimple() {
     'pan': '6.60'
   };
 
+  // Tamizado simple: solo columna M-1, sin cuarteo (k = 1)
+  const ctTotal = document.getElementById("granu-cuarteo-total");
+  if (ctTotal) ctTotal.value = "";
+  const ctPorcion = document.getElementById("granu-cuarteo-porcion");
+  if (ctPorcion) ctPorcion.value = "";
+  const kEl = document.getElementById("granu-factor-k");
+  if (kEl) kEl.textContent = "k = 1.0000";
+
   ASTM_SIEVES.forEach(s => {
     const input = document.getElementById(`granu-ret-${s.id}`);
     if (input) {
       input.value = demoRetenidos[s.id] || '0.00';
     }
+    const input2 = document.getElementById(`granu-ret2-${s.id}`);
+    if (input2) input2.value = "0.00";
   });
 
   const perdidaEl = document.getElementById("granu-live-perdida");
@@ -1955,41 +2010,43 @@ function cargarDemoGranuSimple() {
 }
 
 function cargarDemoGranuCompuesto() {
-  document.getElementById("granu-masa-total").value = "12443.90";
-  document.getElementById("granu-masa-lavada").value = "11718.00";
+  // Ejemplo de CUARTEO auto-consistente:
+  //  - Gruesos (M-1): pesados completos.          Σ = 2550 g
+  //  - Finos que pasan N°4: 2400 g totales, cuarteados a una porción de 600 g  →  k = 4
+  //  - Finos (M-2): pesados en la porción de 600 g. Σ(M-2)·k = 600·4 = 2400 g
+  //  - Retenido efectivo total = 2550 + 2400 = 4950 g = W0  (balance exacto)
+  document.getElementById("granu-masa-total").value = "5000.00";
+  document.getElementById("granu-masa-lavada").value = "4950.00";
 
-  const demoCompuesto = {
-    '3in': '0.00',
-    '2in': '236.00',
-    '1_5in': '912.00',
-    '1in': '1144.00',
-    '3_4in': '528.00',
-    '1_2in': '793.00',
-    '3_8in': '553.00',
-    '1_4in': '948.00',
-    'n4': '632.00',
-    'n10': '299.00',
-    'n20': '270.00',
-    'n30': '180.00',
-    'n40': '138.00',
-    'n60': '165.00',
-    'n100': '105.00',
-    'n140': '42.00',
-    'n200': '40.50',
-    'pan': '12.00'
+  const ctTotal = document.getElementById("granu-cuarteo-total");
+  if (ctTotal) ctTotal.value = "2400.00";
+  const ctPorcion = document.getElementById("granu-cuarteo-porcion");
+  if (ctPorcion) ctPorcion.value = "600.00";
+  const kEl = document.getElementById("granu-factor-k");
+  if (kEl) kEl.textContent = "k = 4.0000";
+
+  // Muestra 1 (gruesos, completos)
+  const demoM1 = {
+    '1in': '550.00', '3_4in': '600.00', '1_2in': '500.00',
+    '3_8in': '400.00', '1_4in': '300.00', 'n4': '200.00'
+  };
+  // Muestra 2 (finos medidos en la porción cuarteada de 600 g)
+  const demoM2 = {
+    'n10': '150.00', 'n20': '120.00', 'n30': '90.00', 'n40': '60.00',
+    'n60': '70.00', 'n100': '50.00', 'n140': '30.00', 'n200': '20.00', 'pan': '10.00'
   };
 
   ASTM_SIEVES.forEach(s => {
     const input = document.getElementById(`granu-ret-${s.id}`);
-    if (input) {
-      input.value = demoCompuesto[s.id] || '0.00';
-    }
+    if (input) input.value = demoM1[s.id] || '0.00';
+    const input2 = document.getElementById(`granu-ret2-${s.id}`);
+    if (input2) input2.value = demoM2[s.id] || '0.00';
   });
 
   const perdidaEl = document.getElementById("granu-live-perdida");
-  if (perdidaEl) perdidaEl.textContent = "725.90 g (5.83 %)";
+  if (perdidaEl) perdidaEl.textContent = "50.00 g (1.00 %)";
 
-  document.getElementById("granu-obs").value = "Muestra de suelo granular ensayada por Tamizado Compuesto según Norma ASTM D6913 / Guía Oficial UNI FIC (Anexo I - Formato AT-PR.4-F1).";
+  document.getElementById("granu-obs").value = "Muestra de suelo granular ensayada por Tamizado Compuesto con cuarteo (factor k = 4) según Norma ASTM D6913 / Guía Oficial UNI FIC (Anexo I - Formato AT-PR.4-F1).";
   calcularGranulometria();
 }
 
@@ -2760,6 +2817,91 @@ function ejecutarDescargaPDF(nombreArchivo) {
     element.style.display = "none";
     window.print();
   }
+}
+
+// Informe GENERAL de resultados (todos los ensayos calculados en un solo PDF)
+function generarPDFGeneral() {
+  const { humedad, volumetrico, gravedad, granulometria } = GeoState.ensayos;
+  const algo = humedad.calculado || volumetrico.calculado || gravedad.calculado || granulometria.calculado;
+  if (!algo) {
+    alert("Aún no hay resultados.\n\nCalcula al menos un ensayo (Humedad, Peso Volumétrico, Gravedad o Granulometría) antes de generar el informe general.");
+    return;
+  }
+
+  // Relaciones derivadas (e₀, n, Sr)
+  const gamma_w = 9.80665;
+  let e0Str = "—", nStr = "—", srStr = "—";
+  if (volumetrico.calculado && volumetrico.gamma_seca && gravedad.calculado && gravedad.gs) {
+    const e0 = (gravedad.gs * gamma_w) / volumetrico.gamma_seca - 1.0;
+    if (e0 > 0) {
+      e0Str = e0.toFixed(3);
+      nStr = `${((e0 / (1.0 + e0)) * 100).toFixed(2)} %`;
+      const wEff = volumetrico.humedad !== null ? volumetrico.humedad : (humedad.promedio !== null ? humedad.promedio : null);
+      if (wEff !== null) srStr = `${((wEff * gravedad.gs) / e0).toFixed(2)} %`;
+    }
+  }
+
+  const fisicasHTML = `
+    <div class="pdf-section-title">1. PROPIEDADES ÍNDICE Y FÍSICAS</div>
+    <table class="pdf-data-table">
+      <thead><tr><th>Parámetro</th><th>Símbolo</th><th>Valor</th><th>Unidad</th><th>Norma / Método</th></tr></thead>
+      <tbody>
+        <tr><td>Contenido de Humedad Natural</td><td><strong>w</strong></td><td style="text-align:right;font-weight:bold;color:#1565c0;">${humedad.calculado ? humedad.promedio.toFixed(2) : '—'}</td><td>%</td><td>ASTM D2216</td></tr>
+        <tr><td>Densidad Natural Húmeda</td><td><strong>ρm</strong></td><td style="text-align:right;font-weight:bold;">${volumetrico.calculado ? volumetrico.rho_humeda.toFixed(3) : '—'}</td><td>g/cm³</td><td>ASTM D7263</td></tr>
+        <tr><td>Peso Volumétrico Húmedo</td><td><strong>γm</strong></td><td style="text-align:right;font-weight:bold;color:#b71c1c;">${volumetrico.calculado ? volumetrico.gamma_kn_m3.toFixed(3) : '—'}</td><td>kN/m³</td><td>ASTM D7263</td></tr>
+        <tr><td>Densidad Seca</td><td><strong>ρd</strong></td><td style="text-align:right;font-weight:bold;">${(volumetrico.calculado && volumetrico.rho_seca) ? volumetrico.rho_seca.toFixed(3) : '—'}</td><td>g/cm³</td><td>ASTM D7263</td></tr>
+        <tr><td>Peso Volumétrico Seco</td><td><strong>γd</strong></td><td style="text-align:right;font-weight:bold;color:#b71c1c;">${(volumetrico.calculado && volumetrico.gamma_seca) ? volumetrico.gamma_seca.toFixed(3) : '—'}</td><td>kN/m³</td><td>ASTM D7263</td></tr>
+        <tr><td>Gravedad Específica de Sólidos</td><td><strong>Gs</strong></td><td style="text-align:right;font-weight:bold;color:#1565c0;">${(gravedad.calculado && gravedad.gs) ? gravedad.gs.toFixed(3) : '—'}</td><td>—</td><td>ASTM D854</td></tr>
+        <tr><td>Relación de Vacíos (estimada)</td><td><strong>e₀</strong></td><td style="text-align:right;">${e0Str}</td><td>—</td><td>Correlación de fases</td></tr>
+        <tr><td>Porosidad (estimada)</td><td><strong>n</strong></td><td style="text-align:right;">${nStr}</td><td>%</td><td>Correlación de fases</td></tr>
+        <tr><td>Grado de Saturación (estimado)</td><td><strong>Sr</strong></td><td style="text-align:right;">${srStr}</td><td>%</td><td>Correlación de fases</td></tr>
+      </tbody>
+    </table>
+  `;
+
+  let granuHTML = "";
+  if (granulometria.calculado) {
+    const g = granulometria;
+    const kInfo = (g.factor_k && g.factor_k !== 1) ? ` &bull; Factor de cuarteo k = ${g.factor_k.toFixed(4)}` : "";
+    granuHTML = `
+      ${getPlantillaEncabezadoGranuHTML()}
+      <div class="pdf-section-title">2. ANÁLISIS GRANULOMÉTRICO POR TAMIZADO (ASTM D6913)</div>
+      <table class="pdf-data-table">
+        <thead><tr><th>SUCS</th><th>% Grava</th><th>% Arena</th><th>% Finos</th><th>D10 (mm)</th><th>D30 (mm)</th><th>D60 (mm)</th><th>Cu</th><th>Cc</th></tr></thead>
+        <tbody>
+          <tr>
+            <td style="text-align:center;font-weight:bold;color:#1565c0;">${g.sucs_simbolo}</td>
+            <td style="text-align:center;">${g.grava.toFixed(1)}</td>
+            <td style="text-align:center;">${g.arena.toFixed(1)}</td>
+            <td style="text-align:center;">${g.finos.toFixed(1)}</td>
+            <td style="text-align:center;">${g.d10 ? g.d10.toFixed(3) : '—'}</td>
+            <td style="text-align:center;">${g.d30 ? g.d30.toFixed(3) : '—'}</td>
+            <td style="text-align:center;">${g.d60 ? g.d60.toFixed(3) : '—'}</td>
+            <td style="text-align:center;">${g.cu ? g.cu.toFixed(2) : '—'}</td>
+            <td style="text-align:center;">${g.cc ? g.cc.toFixed(2) : '—'}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="font-size:8pt;color:#555;margin-top:4px;">${g.sucs_descripcion}${kInfo}</p>
+    `;
+  }
+
+  const contentHTML = `
+    <div class="pdf-report-page">
+      <div class="pdf-header">
+        <div class="pdf-title-main">SOFTWARE DE MECÁNICA DE SUELOS • GEOLOGÍA FIGMM</div>
+        <div class="pdf-title-sub">INFORME GENERAL DE RESULTADOS</div>
+        <div class="pdf-norm-ref">Resumen integral de ensayos de laboratorio de Mecánica de Suelos</div>
+      </div>
+      ${getPlantillaMetadatosHTML()}
+      ${fisicasHTML}
+      ${granuHTML}
+      <div style="margin-top:28px;">${getPlantillaFirmasHTML()}</div>
+    </div>
+  `;
+
+  document.getElementById("print-container").innerHTML = contentHTML;
+  ejecutarDescargaPDF(`Informe_General_Resultados_${GeoState.proyecto.muestra}.pdf`);
 }
 
 // 9. UTILIDADES Y NOTIFICACIONES TOAST
