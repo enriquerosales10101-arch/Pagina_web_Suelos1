@@ -1605,6 +1605,9 @@ function renderGranulometriaTable() {
         <td>
           <input type="number" step="0.01" class="input-control font-mono" id="granu-ret2-${s.id}" placeholder="0.00" value="0.00">
         </td>
+        <td class="font-mono text-center" id="granu-pp-${s.id}">—</td>
+        <td class="font-mono text-center" id="granu-pa-${s.id}">—</td>
+        <td class="font-mono text-center font-bold text-primary" id="granu-pasa-${s.id}">—</td>
       </tr>
     `;
   });
@@ -1866,6 +1869,14 @@ function renderResultadosGranulometria() {
       <td class="font-mono text-right font-bold text-primary">${t.porc_pasa.toFixed(2)} %</td>
     `;
     tbody.appendChild(tr);
+
+    // Reflejar los % también en la tabla de entrada de tamices (como el formato)
+    const ppEl = document.getElementById(`granu-pp-${t.id}`);
+    if (ppEl) ppEl.textContent = `${t.porc_parcial.toFixed(2)}`;
+    const paEl = document.getElementById(`granu-pa-${t.id}`);
+    if (paEl) paEl.textContent = `${t.porc_acumulado.toFixed(2)}`;
+    const pasaEl = document.getElementById(`granu-pasa-${t.id}`);
+    if (pasaEl) pasaEl.textContent = `${t.porc_pasa.toFixed(2)}`;
   });
 
   renderGraficoGranulometria(g.tamices);
@@ -1983,6 +1994,10 @@ function limpiarGranulometria() {
     if (input) input.value = "0.00";
     const input2 = document.getElementById(`granu-ret2-${s.id}`);
     if (input2) input2.value = "0.00";
+    ["granu-pp-", "granu-pa-", "granu-pasa-"].forEach(pfx => {
+      const c = document.getElementById(pfx + s.id);
+      if (c) c.textContent = "—";
+    });
   });
 
   const perdidaEl = document.getElementById("granu-live-perdida");
