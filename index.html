@@ -190,9 +190,14 @@
             <h3 class="section-title">Síntesis de Propiedades Geotécnicas de la Muestra</h3>
             <p class="section-subtitle">Valores calculados integrados de los ensayos</p>
           </div>
-          <button class="btn btn-secondary-sm" id="btn-sync-all">
-            <span class="icon">🔄</span> Sincronizar Cálculos
-          </button>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+            <button class="btn btn-secondary-sm" id="btn-sync-all">
+              <span class="icon">🔄</span> Sincronizar Cálculos
+            </button>
+            <button class="btn btn-primary" id="btn-exportar-general">
+              <span class="btn-icon">📑</span> Exportar Informe General (PDF)
+            </button>
+          </div>
         </div>
 
         <div class="table-responsive">
@@ -1069,14 +1074,53 @@
             </div>
           </div>
 
+          <!-- Cuarteo y Factor k (OPCIONAL) -->
+          <div class="form-card">
+            <div class="card-head">
+              <span class="card-head-icon">🧮</span>
+              <h4 class="card-head-title">Cuarteo y Factor k <span class="opcional-tag">(opcional)</span></h4>
+            </div>
+            <p class="field-hint">Úsalo cuando la muestra es muy grande y se cuartea para analizar solo una porción. El
+              <strong>factor k</strong> escala lo retenido de la <strong>Muestra 2 (porción cuarteada)</strong> a la
+              muestra completa. Si no cuarteas, deja estos campos vacíos (k = 1).</p>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="granu-cuarteo-total">Peso total de la fracción (antes de cuartear) [g]</label>
+                <div class="input-with-unit">
+                  <input type="number" step="0.01" id="granu-cuarteo-total" class="input-control font-mono"
+                    placeholder="Ej. 4200.00">
+                  <span class="unit">g</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="granu-cuarteo-porcion">Peso de la porción cuarteada analizada [g]</label>
+                <div class="input-with-unit">
+                  <input type="number" step="0.01" id="granu-cuarteo-porcion" class="input-control font-mono"
+                    placeholder="Ej. 1050.00">
+                  <span class="unit">g</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="preview-mini-banner"
+              style="margin-top: 10px; padding: 8px 12px; background: var(--bg-card-alt); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.8rem; color: var(--neutral-muted);">Factor de cuarteo (k = Peso total ÷ Peso
+                porción):</span>
+              <span class="font-mono font-bold text-primary" id="granu-factor-k" style="font-size: 0.95rem;">k =
+                1.0000</span>
+            </div>
+          </div>
+
           <!-- Tabla de Tamices ASTM E11 -->
           <div class="form-card">
             <div class="card-head">
               <span class="card-head-icon">🕳️</span>
               <h4 class="card-head-title">Registro de Masas Retenidas en Serie de Tamices</h4>
             </div>
-            <p class="field-hint">Serie de tamices según norma ASTM E11 / ASTM D6913. Ingrese la masa retenida (g) en
-              cada tamiz empleado.</p>
+            <p class="field-hint">Serie de tamices según norma ASTM E11 / ASTM D6913. <strong>M-1</strong>: retenido de la
+              muestra completa (gruesos). <strong>M-2</strong>: retenido de la porción cuarteada (finos), que se
+              multiplica por el factor k. Si no cuarteas, usa solo la columna M-1.</p>
 
             <div class="table-responsive">
               <table class="data-table input-table" id="table-granu-inputs">
@@ -1085,7 +1129,8 @@
                     <th style="width: 45px;">N.°</th>
                     <th>Tamiz (ASTM E11)</th>
                     <th>Abertura (mm)</th>
-                    <th>Masa Retenida (g)</th>
+                    <th>Retenido M-1<br><span style="font-weight:400;font-size:0.72rem;">completa (g)</span></th>
+                    <th>Retenido M-2<br><span style="font-weight:400;font-size:0.72rem;">cuarteado (g)</span></th>
                   </tr>
                 </thead>
                 <tbody id="tbody-granu-inputs">
