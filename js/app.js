@@ -1380,7 +1380,7 @@ function initDashboardLab2Events() {
   if (btnCargarDemoDash) {
     btnCargarDemoDash.addEventListener("click", () => {
       cargarDemoGranuSimple();
-      showToast("Datos de demostración UNI FIC cargados en Laboratorio 2.");
+      showToast("Datos de demostración cargados en granulometría.");
     });
   }
 
@@ -1960,6 +1960,17 @@ function limpiarGranulometria() {
   document.getElementById("granu-masa-lavada").value = "";
   document.getElementById("granu-obs").value = "";
 
+  // Datos del ensayo + control de secado
+  ["granu-hdr-tecnico", "granu-hdr-informe", "granu-hdr-calicata", "granu-hdr-fecha", "granu-hdr-muestra",
+    "granu-hdr-profundidad", "granu-hdr-horno", "granu-hdr-balanza", "granu-hdr-masa-total",
+    "granu-hdr-masa-recipiente", "granu-hdr-masa-gruesa", "granu-hdr-masa-fina", "granu-hdr-humedad"]
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+  ["g1", "g2", "g3", "g4", "f1", "f2", "f3", "f4"].forEach(k => {
+    ["fecha", "hora", "masa"].forEach(c => { const el = document.getElementById(`sec-${k}-${c}`); if (el) el.value = ""; });
+  });
+  const metDefault = document.querySelector('input[name="granu-metodo"][value="a-compuesto"]');
+  if (metDefault) metDefault.checked = true;
+
   const ctTotal = document.getElementById("granu-cuarteo-total");
   if (ctTotal) ctTotal.value = "";
   const ctPorcion = document.getElementById("granu-cuarteo-porcion");
@@ -2035,7 +2046,7 @@ function cargarDemoGranuSimple() {
   const perdidaEl = document.getElementById("granu-live-perdida");
   if (perdidaEl) perdidaEl.textContent = "192.00 g (6.62 %)";
 
-  document.getElementById("granu-obs").value = "Muestra ensayada por Tamizado Simple con lavado en malla N°200 según Norma ASTM D6913 / Guía Oficial UNI FIC (Anexo II - Formato AT-PR.4-F1).";
+  document.getElementById("granu-obs").value = "Muestra ensayada por Tamizado Simple con lavado en malla N°200 según Norma ASTM D6913 / NTP 339.128.";
   calcularGranulometria();
 }
 
@@ -2076,34 +2087,53 @@ function cargarDemoGranuCompuesto() {
   const perdidaEl = document.getElementById("granu-live-perdida");
   if (perdidaEl) perdidaEl.textContent = "50.00 g (1.00 %)";
 
-  document.getElementById("granu-obs").value = "Muestra de suelo granular ensayada por Tamizado Compuesto con cuarteo (factor k = 4) según Norma ASTM D6913 / Guía Oficial UNI FIC (Anexo I - Formato AT-PR.4-F1).";
+  document.getElementById("granu-obs").value = "Muestra de suelo granular ensayada por Tamizado Compuesto con cuarteo (factor k = 4) según Norma ASTM D6913 / NTP 339.128.";
   calcularGranulometria();
 }
 
 // ===================================================================
 // 10. GENERADOR DE INFORMES PDF (INDIVIDUALES Y CONSOLIDADOS POR PANEL)
 // ===================================================================
-// Lee los campos opcionales del "Encabezado del Ensayo" de granulometría
+// Lee los campos del "Datos del Ensayo" + Control de Secado de granulometría
 function capturarEncabezadoGranu() {
   const val = id => (document.getElementById(id)?.value || "").trim();
+  const metodoEl = document.querySelector('input[name="granu-metodo"]:checked');
+  const metodoVal = metodoEl ? metodoEl.value : "";
+  const metodoMap = {
+    "a-simple": 'Método A — Tamizado Simple (T.M. < 3/4")',
+    "a-compuesto": 'Método A — Tamizado Compuesto (T.M. ≥ 3/4")',
+    "b-simple": 'Método B — Tamizado Simple (T.M. < N°4)'
+  };
+  const secado = {};
+  ["g1", "g2", "g3", "g4", "f1", "f2", "f3", "f4"].forEach(k => {
+    secado[k] = { fecha: val(`sec-${k}-fecha`), hora: val(`sec-${k}-hora`), masa: val(`sec-${k}-masa`) };
+  });
   return {
-    solicitado: val("granu-hdr-solicitado"),
+    tecnico: val("granu-hdr-tecnico"),
+    informe: val("granu-hdr-informe"),
+    calicata: val("granu-hdr-calicata"),
     fecha: val("granu-hdr-fecha"),
-    proyecto: val("granu-hdr-proyecto"),
-    pozo: val("granu-hdr-pozo"),
     muestra: val("granu-hdr-muestra"),
     profundidad: val("granu-hdr-profundidad"),
-    peso_muestra: val("granu-hdr-peso-muestra"),
-    peso_aire: val("granu-hdr-peso-aire"),
+    horno: val("granu-hdr-horno"),
+    balanza: val("granu-hdr-balanza"),
+    masa_total: val("granu-hdr-masa-total"),
+    masa_recipiente: val("granu-hdr-masa-recipiente"),
+    masa_gruesa: val("granu-hdr-masa-gruesa"),
+    masa_fina: val("granu-hdr-masa-fina"),
+    humedad: val("granu-hdr-humedad"),
+    metodo: metodoVal,
+    metodo_txt: metodoMap[metodoVal] || "",
+    secado
   };
 }
 
-// Vuelca Proyecto / Muestra / Fecha del encabezado hacia el proyecto global (solo si se llenaron)
+// Vuelca Muestra / Calicata / Fecha del encabezado hacia el proyecto global (solo si se llenaron)
 function sincronizarEncabezadoGranuAProyecto(enc) {
   if (!enc) return;
   let cambio = false;
-  if (enc.proyecto) { GeoState.proyecto.nombre = enc.proyecto; cambio = true; }
   if (enc.muestra) { GeoState.proyecto.muestra = enc.muestra; cambio = true; }
+  if (enc.calicata) { GeoState.proyecto.procedencia = enc.calicata; cambio = true; }
   if (enc.fecha) {
     const partes = enc.fecha.split("-"); // yyyy-mm-dd -> dd/mm/yyyy
     GeoState.proyecto.fecha = partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : enc.fecha;
@@ -2112,30 +2142,71 @@ function sincronizarEncabezadoGranuAProyecto(enc) {
   if (cambio) updateStripUI();
 }
 
-// Bloque extra para el PDF con los campos propios del formato (los que no están en la metadata estándar)
+// Bloque para el PDF: datos del ensayo + control de secado (solo los campos con dato)
 function getPlantillaEncabezadoGranuHTML() {
   const enc = GeoState.ensayos.granulometria && GeoState.ensayos.granulometria.encabezado;
   if (!enc) return "";
+
+  // Datos del ensayo (no duplica muestra/fecha, que ya van en la metadata estándar)
   const campos = [
-    ["Solicitado por", enc.solicitado],
-    ["Pozo N°", enc.pozo],
+    ["Técnico", enc.tecnico],
+    ["Informe N°", enc.informe],
+    ["Calicata / Cantera", enc.calicata],
     ["Profundidad", enc.profundidad ? `${enc.profundidad} m` : ""],
-    ["Peso de Muestra", enc.peso_muestra ? `${enc.peso_muestra} g` : ""],
-    ["Peso de Muestra Secado al Aire", enc.peso_aire ? `${enc.peso_aire} g` : ""],
+    ["Horno", enc.horno],
+    ["Balanza", enc.balanza],
+    ["Masa Total", enc.masa_total ? `${enc.masa_total} g` : ""],
+    ["Masa del Recipiente", enc.masa_recipiente ? `${enc.masa_recipiente} g` : ""],
+    ["Masa Parte Gruesa", enc.masa_gruesa ? `${enc.masa_gruesa} g` : ""],
+    ["Masa Parte Fina", enc.masa_fina ? `${enc.masa_fina} g` : ""],
+    ["% Humedad", enc.humedad ? `${enc.humedad} %` : ""],
+    ["Método", enc.metodo_txt],
   ].filter(([, v]) => v);
-  if (!campos.length) return "";
-  let filas = "";
-  for (let i = 0; i < campos.length; i += 2) {
-    const [l1, v1] = campos[i];
-    const par = campos[i + 1];
-    const l2 = par ? par[0] : "";
-    const v2 = par ? par[1] : "";
-    filas += `<tr>
-      <td class="pdf-meta-label">${l1}:</td><td>${v1}</td>
-      <td class="pdf-meta-label">${l2 ? l2 + ":" : ""}</td><td>${v2}</td>
-    </tr>`;
+
+  let headerTable = "";
+  if (campos.length) {
+    let filas = "";
+    for (let i = 0; i < campos.length; i += 2) {
+      const [l1, v1] = campos[i];
+      const par = campos[i + 1];
+      const l2 = par ? par[0] : "";
+      const v2 = par ? par[1] : "";
+      filas += `<tr><td class="pdf-meta-label">${l1}:</td><td>${v1}</td><td class="pdf-meta-label">${l2 ? l2 + ":" : ""}</td><td>${v2}</td></tr>`;
+    }
+    headerTable = `<table class="pdf-table-meta" style="margin-top:4px;">${filas}</table>`;
   }
-  return `<table class="pdf-table-meta" style="margin-top:4px;">${filas}</table>`;
+
+  // Control de secado (solo si hay algún dato)
+  const sec = enc.secado || {};
+  const hayAlgun = grupo => grupo.some(k => sec[k] && (sec[k].fecha || sec[k].hora || sec[k].masa));
+  const fila = (etapa, k) => {
+    const s = sec[k] || {};
+    return `<tr><td>${etapa}</td><td style="text-align:center;">${s.fecha || "—"}</td><td style="text-align:center;">${s.hora || "—"}</td><td style="text-align:right;">${s.masa ? s.masa + " g" : "—"}</td></tr>`;
+  };
+  const gruesos = ["g1", "g2", "g3", "g4"];
+  const finos = ["f1", "f2", "f3", "f4"];
+  let secadoTable = "";
+  if (hayAlgun(gruesos) || hayAlgun(finos)) {
+    const etG = ["Masa húmeda", "Secado (12–16 h)", "Masa seca", "Lavado y secado (12–16 h)"];
+    const etF = ["Masa húmeda", "Secado (12–16 h)", "Masa seca inicial (Mo)", "Lavado y secado (12–16 h)"];
+    let body = "";
+    if (hayAlgun(gruesos)) {
+      body += `<tr><td colspan="4" style="background:#f1f5f9;font-weight:bold;">Parte Gruesa</td></tr>`;
+      gruesos.forEach((k, i) => body += fila(etG[i], k));
+    }
+    if (hayAlgun(finos)) {
+      body += `<tr><td colspan="4" style="background:#f1f5f9;font-weight:bold;">Parte Fina</td></tr>`;
+      finos.forEach((k, i) => body += fila(etF[i], k));
+    }
+    secadoTable = `
+      <div class="pdf-section-title" style="margin-top:6px;">CONTROL DE SECADO</div>
+      <table class="pdf-data-table">
+        <thead><tr><th>Etapa</th><th>Fecha</th><th>Hora</th><th>Masa</th></tr></thead>
+        <tbody>${body}</tbody>
+      </table>`;
+  }
+
+  return headerTable + secadoTable;
 }
 
 function getPlantillaMetadatosHTML() {
@@ -2721,7 +2792,7 @@ function generarPDFConsolidadoLab2() {
       <div class="pdf-header">
         <div class="pdf-title-main">SOFTWARE DE MECÁNICA DE SUELOS • GEOLOGÍA FIGMM</div>
         <div class="pdf-title-sub">INFORME GENERAL DEL LABORATORIO N.º 2</div>
-        <div class="pdf-norm-ref">Normas de referencia: ASTM D6913 / D6913M • NTP 339.128 • Formato Oficial UNI FIC</div>
+        <div class="pdf-norm-ref">Normas de referencia: ASTM D6913 / D6913M • NTP 339.128</div>
       </div>
 
       ${getPlantillaMetadatosHTML()}

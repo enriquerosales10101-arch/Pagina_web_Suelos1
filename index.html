@@ -1064,19 +1064,19 @@
           <span>← Volver al Panel</span>
         </button>
         <div class="detail-titles">
-          <span class="norm-tag">ASTM D6913 / D6913M • NTP 339.128 • UNI FIC LMS</span>
+          <span class="norm-tag">ASTM D6913 / D6913M • NTP 339.128</span>
           <h2 class="view-title">04. Análisis Granulométrico por Tamizado</h2>
           <p class="view-desc">Determinación cuantitativa de la gradación del suelo entre los tamices de 3 pulgadas (75
             mm) y N°200 (0.075 mm) con lavado previo según norma ASTM D6913.</p>
         </div>
         <div class="header-tools">
           <button class="btn btn-outline-sm" id="btn-fill-demo-granu-simple"
-            title="Cargar ejemplo UNI FIC de Tamizado Simple (Anexo II - Pág. 12)">
-            <span>✨ Ejemplo Simple (UNI Anexo II)</span>
+            title="Cargar ejemplo de Tamizado Simple">
+            <span>✨ Ejemplo Simple</span>
           </button>
           <button class="btn btn-outline-sm" id="btn-fill-demo-granu-compuesto"
-            title="Cargar ejemplo UNI FIC de Tamizado Compuesto (Anexo I - Pág. 9)">
-            <span>✨ Ejemplo Compuesto (UNI Anexo I)</span>
+            title="Cargar ejemplo de Tamizado Compuesto (con cuarteo)">
+            <span>✨ Ejemplo Compuesto</span>
           </button>
         </div>
       </div>
@@ -1085,20 +1085,29 @@
         <!-- COLUMNA IZQUIERDA: ENTRADAS -->
         <div class="col-inputs">
 
-          <!-- Encabezado del ensayo (OPCIONAL) - Formato "Análisis Mecánico por Tamizado" -->
+          <!-- DATOS DEL ENSAYO (encabezado) -->
           <div class="form-card">
             <div class="card-head">
               <span class="card-head-icon">📋</span>
-              <h4 class="card-head-title">Encabezado del Ensayo <span class="opcional-tag">(opcional)</span></h4>
+              <h4 class="card-head-title">Datos del Ensayo</h4>
             </div>
-            <p class="field-hint">Datos administrativos del formato "Análisis Mecánico por Tamizado". Son opcionales y solo
-              aparecen en el encabezado del informe. Los pesos "secada al horno" y "lavada y secada al horno" se ingresan
-              en la tarjeta de abajo (W₁ y W₀).</p>
+            <p class="field-hint">Identificación del ensayo. Estos campos aparecen en el encabezado del informe PDF.</p>
 
             <div class="form-grid-2">
               <div class="form-group">
-                <label for="granu-hdr-solicitado">Solicitado por</label>
-                <input type="text" id="granu-hdr-solicitado" class="input-control" placeholder="Ej. Constructora XYZ S.A.">
+                <label for="granu-hdr-tecnico">Técnico</label>
+                <input type="text" id="granu-hdr-tecnico" class="input-control" placeholder="Ej. J. Pérez">
+              </div>
+              <div class="form-group">
+                <label for="granu-hdr-informe">Informe N°</label>
+                <input type="text" id="granu-hdr-informe" class="input-control" placeholder="Ej. INF-001">
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="granu-hdr-calicata">Calicata / Cantera</label>
+                <input type="text" id="granu-hdr-calicata" class="input-control" placeholder="Ej. C-2">
               </div>
               <div class="form-group">
                 <label for="granu-hdr-fecha">Fecha</label>
@@ -1106,47 +1115,186 @@
               </div>
             </div>
 
-            <div class="form-group">
-              <label for="granu-hdr-proyecto">Proyecto</label>
-              <input type="text" id="granu-hdr-proyecto" class="input-control" placeholder="Ej. Carretera Central Km 45">
-            </div>
-
             <div class="form-grid-2">
               <div class="form-group">
-                <label for="granu-hdr-pozo">Pozo N°</label>
-                <input type="text" id="granu-hdr-pozo" class="input-control" placeholder="Ej. P-01">
-              </div>
-              <div class="form-group">
-                <label for="granu-hdr-muestra">Muestra</label>
+                <label for="granu-hdr-muestra">Muestra N°</label>
                 <input type="text" id="granu-hdr-muestra" class="input-control" placeholder="Ej. M-01">
               </div>
-            </div>
-
-            <div class="form-grid-2">
               <div class="form-group">
                 <label for="granu-hdr-profundidad">Profundidad</label>
                 <div class="input-with-unit">
-                  <input type="text" id="granu-hdr-profundidad" class="input-control" placeholder="Ej. 1.50">
+                  <input type="text" id="granu-hdr-profundidad" class="input-control" placeholder="Ej. 1.20 - 1.50">
                   <span class="unit">m</span>
                 </div>
               </div>
+            </div>
+
+            <div class="form-grid-2">
               <div class="form-group">
-                <label for="granu-hdr-peso-muestra">Peso de Muestra</label>
+                <label for="granu-hdr-horno">Horno</label>
+                <input type="text" id="granu-hdr-horno" class="input-control" placeholder="Ej. H2-3">
+              </div>
+              <div class="form-group">
+                <label for="granu-hdr-balanza">Balanza</label>
+                <input type="text" id="granu-hdr-balanza" class="input-control" placeholder="Ej. BL-18">
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="granu-hdr-masa-total">Masa Total</label>
                 <div class="input-with-unit">
-                  <input type="number" step="0.01" id="granu-hdr-peso-muestra" class="input-control font-mono"
-                    placeholder="Ej. 3050.00">
-                  <span class="unit">grs</span>
+                  <input type="number" step="0.01" id="granu-hdr-masa-total" class="input-control font-mono"
+                    placeholder="Ej. 15214">
+                  <span class="unit">g</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="granu-hdr-masa-recipiente">Masa del Recipiente</label>
+                <div class="input-with-unit">
+                  <input type="text" id="granu-hdr-masa-recipiente" class="input-control font-mono"
+                    placeholder="Ej. 247 / 204.9">
+                  <span class="unit">g</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="granu-hdr-masa-gruesa">Masa Parte Gruesa</label>
+                <div class="input-with-unit">
+                  <input type="number" step="0.01" id="granu-hdr-masa-gruesa" class="input-control font-mono"
+                    placeholder="Ej. 1470">
+                  <span class="unit">g</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="granu-hdr-masa-fina">Masa Parte Fina</label>
+                <div class="input-with-unit">
+                  <input type="number" step="0.01" id="granu-hdr-masa-fina" class="input-control font-mono"
+                    placeholder="Ej. 13744">
+                  <span class="unit">g</span>
                 </div>
               </div>
             </div>
 
             <div class="form-group">
-              <label for="granu-hdr-peso-aire">Peso de Muestra Secado al Aire</label>
-              <div class="input-with-unit" style="max-width: 260px;">
-                <input type="number" step="0.01" id="granu-hdr-peso-aire" class="input-control font-mono"
-                  placeholder="Ej. 2950.00">
-                <span class="unit">grs</span>
+              <label>Método de ensayo</label>
+              <div style="display:flex; flex-direction:column; gap:0.4rem; margin-top:0.3rem; font-size:0.85rem;">
+                <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;"><input type="radio"
+                    name="granu-metodo" value="a-simple"> Método A — Tamizado Simple (T.M. &lt; 3/4")</label>
+                <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;"><input type="radio"
+                    name="granu-metodo" value="a-compuesto" checked> Método A — Tamizado Compuesto (T.M. &ge; 3/4")</label>
+                <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;"><input type="radio"
+                    name="granu-metodo" value="b-simple"> Método B — Tamizado Simple (T.M. &lt; N°4)</label>
               </div>
+            </div>
+
+            <div class="form-group">
+              <label for="granu-hdr-humedad">% Humedad</label>
+              <div class="input-with-unit" style="max-width: 200px;">
+                <input type="number" step="0.01" id="granu-hdr-humedad" class="input-control font-mono"
+                  placeholder="Ej. 12.50">
+                <span class="unit">%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CONTROL DE SECADO -->
+          <div class="form-card">
+            <div class="card-head">
+              <span class="card-head-icon">🌡️</span>
+              <h4 class="card-head-title">Control de Secado</h4>
+            </div>
+            <p class="field-hint">Registro de secado en horno (12–16 h) para la parte gruesa y fina. Son datos del ensayo y
+              aparecen en el informe.</p>
+
+            <h4 class="sub-section-title">Parte Gruesa</h4>
+            <div class="table-responsive">
+              <table class="data-table input-table">
+                <thead>
+                  <tr>
+                    <th>Etapa</th>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Masa (g)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Masa húmeda</td>
+                    <td><input type="date" class="input-control" id="sec-g1-fecha"></td>
+                    <td><input type="time" class="input-control" id="sec-g1-hora"></td>
+                    <td><input type="number" step="0.01" class="input-control font-mono" id="sec-g1-masa"
+                        placeholder="0.00"></td>
+                  </tr>
+                  <tr>
+                    <td>Secado (12–16 h)</td>
+                    <td><input type="date" class="input-control" id="sec-g2-fecha"></td>
+                    <td><input type="time" class="input-control" id="sec-g2-hora"></td>
+                    <td><input type="number" step="0.01" class="input-control font-mono" id="sec-g2-masa"
+                        placeholder="0.00"></td>
+                  </tr>
+                  <tr>
+                    <td>Masa seca</td>
+                    <td><input type="date" class="input-control" id="sec-g3-fecha"></td>
+                    <td><input type="time" class="input-control" id="sec-g3-hora"></td>
+                    <td><input type="number" step="0.01" class="input-control font-mono" id="sec-g3-masa"
+                        placeholder="0.00"></td>
+                  </tr>
+                  <tr>
+                    <td>Lavado y secado (12–16 h)</td>
+                    <td><input type="date" class="input-control" id="sec-g4-fecha"></td>
+                    <td><input type="time" class="input-control" id="sec-g4-hora"></td>
+                    <td><input type="number" step="0.01" class="input-control font-mono" id="sec-g4-masa"
+                        placeholder="0.00"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h4 class="sub-section-title" style="margin-top:1rem;">Parte Fina</h4>
+            <div class="table-responsive">
+              <table class="data-table input-table">
+                <thead>
+                  <tr>
+                    <th>Etapa</th>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Masa (g)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Masa húmeda</td>
+                    <td><input type="date" class="input-control" id="sec-f1-fecha"></td>
+                    <td><input type="time" class="input-control" id="sec-f1-hora"></td>
+                    <td><input type="number" step="0.01" class="input-control font-mono" id="sec-f1-masa"
+                        placeholder="0.00"></td>
+                  </tr>
+                  <tr>
+                    <td>Secado (12–16 h)</td>
+                    <td><input type="date" class="input-control" id="sec-f2-fecha"></td>
+                    <td><input type="time" class="input-control" id="sec-f2-hora"></td>
+                    <td><input type="number" step="0.01" class="input-control font-mono" id="sec-f2-masa"
+                        placeholder="0.00"></td>
+                  </tr>
+                  <tr>
+                    <td>Masa seca inicial (Mo)</td>
+                    <td><input type="date" class="input-control" id="sec-f3-fecha"></td>
+                    <td><input type="time" class="input-control" id="sec-f3-hora"></td>
+                    <td><input type="number" step="0.01" class="input-control font-mono" id="sec-f3-masa"
+                        placeholder="0.00"></td>
+                  </tr>
+                  <tr>
+                    <td>Lavado y secado (12–16 h)</td>
+                    <td><input type="date" class="input-control" id="sec-f4-fecha"></td>
+                    <td><input type="time" class="input-control" id="sec-f4-hora"></td>
+                    <td><input type="number" step="0.01" class="input-control font-mono" id="sec-f4-masa"
+                        placeholder="0.00"></td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
@@ -1345,7 +1493,7 @@
               </div>
 
               <!-- Tabla Detallada de Tamizado -->
-              <h4 class="sub-section-title">Tabulación de Resultados por Tamiz (Formato UNI FIC)</h4>
+              <h4 class="sub-section-title">Tabulación de Resultados por Tamiz</h4>
               <div class="table-responsive">
                 <table class="data-table results-table" id="table-granu-breakdown">
                   <thead>
