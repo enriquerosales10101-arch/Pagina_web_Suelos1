@@ -1250,6 +1250,23 @@ h5 {
   background: rgba(255, 255, 255, 0.22);
 }
 
+/* Botón "Volver al Panel" (dentro de cada opción): recuadro verde bien visible */
+.btn.btn-back-dashboard {
+  background: #2e7d32;
+  border: 1px solid #2e7d32;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 2px 6px rgba(46, 125, 50, 0.35);
+}
+
+.btn.btn-back-dashboard:hover {
+  background: #1b5e20;
+  border-color: #1b5e20;
+  color: #ffffff;
+}
+
 .btn-outline {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.3);
