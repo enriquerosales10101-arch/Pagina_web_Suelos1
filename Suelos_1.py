@@ -13,6 +13,7 @@ from reportlab.platypus import (
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 try:
+    # pyrefly: ignore [missing-import]
     import matplotlib.pyplot as plt
     MATPLOTLIB_AVAILABLE = True
 except ImportError:
@@ -1968,6 +1969,7 @@ class Granulometria(BaseEnsayo):
             return
             
         try:
+            # pyrefly: ignore [missing-import]
             from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
             
             aberturas = [d["abertura"] for d in self.datos_calculados["tamices"] if d["abertura"] > 0]
