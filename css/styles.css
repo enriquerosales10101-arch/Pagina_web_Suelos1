@@ -69,7 +69,9 @@
 }
 
 /* Reset y Base */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -87,7 +89,11 @@ body {
 }
 
 /* Tipografía de Utilidad */
-h1, h2, h3, h4, h5 {
+h1,
+h2,
+h3,
+h4,
+h5 {
   color: var(--neutral-heading);
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -97,12 +103,29 @@ h1, h2, h3, h4, h5 {
   font-family: var(--font-mono);
 }
 
-.text-primary { color: var(--primary); }
-.text-accent { color: var(--accent-red); }
-.text-success { color: var(--accent-green); }
-.text-right { text-align: right; }
-.text-center { text-align: center; }
-.font-bold { font-weight: 700; }
+.text-primary {
+  color: var(--primary);
+}
+
+.text-accent {
+  color: var(--accent-red);
+}
+
+.text-success {
+  color: var(--accent-green);
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.font-bold {
+  font-weight: 700;
+}
 
 /* ===================================================================
    CABECERA DE LA APLICACIÓN
@@ -222,8 +245,15 @@ h1, h2, h3, h4, h5 {
 }
 
 @keyframes subnav-slide {
-  from { opacity: 0; transform: translateY(-6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .sub-nav-container {
@@ -434,8 +464,15 @@ h1, h2, h3, h4, h5 {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .view-header {
@@ -1308,8 +1345,15 @@ h1, h2, h3, h4, h5 {
 }
 
 @keyframes modalIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .modal-header {
@@ -1550,4 +1594,3 @@ h1, h2, h3, h4, h5 {
 .hidden-section {
   display: none !important;
 }
-

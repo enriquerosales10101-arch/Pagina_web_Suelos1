@@ -290,101 +290,37 @@ document.addEventListener("DOMContentLoaded", () => {
   updateDashboardLab2Summary();
 });
 
-// 1. NAVEGACIÓN Y PESTAÑAS (dos niveles: Laboratorio → Ensayo)
-
-// A qué laboratorio pertenece cada vista (null = Panel General, sin sub-barra)
-const VIEW_LAB = {
-  "view-dashboard": null,
-  "view-humedad": "lab1",
-  "view-volumetrico": "lab1",
-  "view-gravedad": "lab1",
-  "view-granulometria": "lab2",
-};
-
-// Primer ensayo que se abre al pulsar cada laboratorio
-const LAB_FIRST_VIEW = {
-  lab1: "view-humedad",
-  lab2: "view-granulometria",
-};
-
-const LAB_LABEL = {
-  lab1: "Laboratorio 1",
-  lab2: "Laboratorio 2",
-};
-
+// 1. NAVEGACIÓN Y PESTAÑAS (panel principal ⇄ opciones)
 function initNavigation() {
   const views = document.querySelectorAll(".view");
-  const primaryBtns = document.querySelectorAll(".nav-btn");
-  const subBtns = document.querySelectorAll(".subnav-btn");
-  const subNavBar = document.getElementById("sub-nav-bar");
-  const subNavLabel = document.getElementById("sub-nav-label");
-
-  // Muestra/oculta la segunda fila según el laboratorio activo
-  function updateSubNav(lab) {
-    document.querySelectorAll(".sub-nav-group").forEach(g => g.classList.remove("active"));
-    if (lab) {
-      const group = document.getElementById(`subnav-${lab}`);
-      if (group) group.classList.add("active");
-      if (subNavLabel) subNavLabel.textContent = LAB_LABEL[lab] || "Ensayos";
-      subNavBar.classList.remove("hidden");
-    } else {
-      subNavBar.classList.add("hidden");
-    }
-  }
+  const mainNav = document.getElementById("main-nav"); // contenedor del botón "Panel Principal"
 
   function switchView(targetId) {
     views.forEach(v => v.classList.remove("active"));
     const activeView = document.getElementById(targetId);
     if (activeView) activeView.classList.add("active");
 
-    const lab = VIEW_LAB[targetId] ?? null;
-
-    // Resaltado de la barra principal (laboratorio o panel general)
-    primaryBtns.forEach(b => b.classList.remove("active"));
-    if (targetId === "view-dashboard") {
-      document.getElementById("btn-nav-dashboard").classList.add("active");
-    } else if (lab) {
-      const labBtn = document.getElementById(`btn-nav-${lab}`);
-      if (labBtn) labBtn.classList.add("active");
-    }
-
-    // Segunda fila: mostrar el grupo correcto y resaltar el ensayo activo
-    updateSubNav(lab);
-    subBtns.forEach(b => b.classList.toggle("active", b.getAttribute("data-target") === targetId));
+    // El botón "Panel Principal" solo aparece dentro de una opción
+    if (mainNav) mainNav.classList.toggle("hidden", targetId === "view-dashboard");
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  // Panel General
-  document.getElementById("btn-nav-dashboard").addEventListener("click", () => switchView("view-dashboard"));
+  // Botón "Panel Principal" (vuelve al panel)
+  const btnHome = document.getElementById("btn-nav-home");
+  if (btnHome) btnHome.addEventListener("click", () => switchView("view-dashboard"));
 
-  // Botones de laboratorio → abren el primer ensayo del lab y despliegan su fila
-  document.querySelectorAll(".nav-btn[data-lab]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const lab = btn.getAttribute("data-lab");
-      if (LAB_FIRST_VIEW[lab]) switchView(LAB_FIRST_VIEW[lab]);
-    });
-  });
-
-  // Botones de la segunda fila (ensayos)
-  subBtns.forEach(btn => {
-    btn.addEventListener("click", () => {
-      const target = btn.getAttribute("data-target");
-      if (target) switchView(target);
-    });
-  });
-
-  // Marca / logo y tarjetas del panel
+  // Marca / logo → panel
   document.getElementById("nav-brand-btn").addEventListener("click", () => switchView("view-dashboard"));
+
+  // Tarjetas del panel → abren su opción
   document.getElementById("btn-goto-humedad").addEventListener("click", () => switchView("view-humedad"));
   document.getElementById("btn-goto-volumetrico").addEventListener("click", () => switchView("view-volumetrico"));
   document.getElementById("btn-goto-gravedad").addEventListener("click", () => switchView("view-gravedad"));
-
-  // Tarjeta única Lab 2 → vista Granulometría
   const btnGotoGranu = document.getElementById("btn-goto-granulometria");
   if (btnGotoGranu) btnGotoGranu.addEventListener("click", () => switchView("view-granulometria"));
 
-  // Botones "Volver al Panel" (vuelven siempre al dashboard principal)
+  // Botones "Volver al Panel" dentro de cada opción
   document.querySelectorAll(".btn-back-dashboard").forEach(btn => {
     btn.addEventListener("click", () => switchView("view-dashboard"));
   });
@@ -1244,41 +1180,50 @@ function cargarDemoGravedad() {
 // 7. DASHBOARD, RESUMEN CONSOLIDADO Y BOTÓN EXTERIOR DE PDF GENERAL
 // ===================================================================
 function initDashboardEvents() {
-  document.getElementById("btn-exportar-consolidado-dashboard").addEventListener("click", () => {
-    const { humedad, volumetrico, gravedad } = GeoState.ensayos;
-    const algunoCalculado = humedad.calculado || volumetrico.calculado || gravedad.calculado;
+  const btnExportConsol = document.getElementById("btn-exportar-consolidado-dashboard");
+  if (btnExportConsol) {
+    btnExportConsol.addEventListener("click", () => {
+      const { humedad, volumetrico, gravedad } = GeoState.ensayos;
+      const algunoCalculado = humedad.calculado || volumetrico.calculado || gravedad.calculado;
 
-    if (!algunoCalculado) {
-      alert("Aún no se ha calculado ningún ensayo.\n\nPara emitir el Informe General Consolidado, debe ingresar datos y presionar '⚡ Calcular' en al menos uno de los tres ensayos de Laboratorio 1.");
-      return;
-    }
+      if (!algunoCalculado) {
+        alert("Aún no se ha calculado ningún ensayo.\n\nPara emitir el Informe General Consolidado, debe ingresar datos y presionar '⚡ Calcular' en al menos uno de los tres ensayos.");
+        return;
+      }
 
-    const todosCalculados = humedad.calculado && volumetrico.calculado && gravedad.calculado;
-    if (!todosCalculados) {
-      const confirmacion = confirm(
-        "No todos los 3 ensayos han sido calculados aún:\n\n" +
-        `• 01. Humedad: ${humedad.calculado ? '✅ Calculado' : '⏳ Pendiente'}\n` +
-        `• 02. Peso Volumétrico: ${volumetrico.calculado ? '✅ Calculado' : '⏳ Pendiente'}\n` +
-        `• 03. Gravedad Específica: ${gravedad.calculado ? '✅ Calculado' : '⏳ Pendiente'}\n\n` +
-        "¿Desea generar el Informe General Consolidado incluyendo los ensayos disponibles?"
-      );
-      if (!confirmacion) return;
-    }
+      const todosCalculados = humedad.calculado && volumetrico.calculado && gravedad.calculado;
+      if (!todosCalculados) {
+        const confirmacion = confirm(
+          "No todos los 3 ensayos han sido calculados aún:\n\n" +
+          `• 01. Humedad: ${humedad.calculado ? '✅ Calculado' : '⏳ Pendiente'}\n` +
+          `• 02. Peso Volumétrico: ${volumetrico.calculado ? '✅ Calculado' : '⏳ Pendiente'}\n` +
+          `• 03. Gravedad Específica: ${gravedad.calculado ? '✅ Calculado' : '⏳ Pendiente'}\n\n` +
+          "¿Desea generar el Informe General Consolidado incluyendo los ensayos disponibles?"
+        );
+        if (!confirmacion) return;
+      }
 
-    generarPDFConsolidado();
-  });
+      generarPDFConsolidado();
+    });
+  }
 
-  document.getElementById("btn-cargar-todo-ejemplo").addEventListener("click", () => {
-    cargarDemoHumedad();
-    cargarDemoVolumetrico();
-    cargarDemoGravedad();
-    showToast("Datos de demostración completos cargados en los 3 ensayos.");
-  });
+  const btnCargarTodo = document.getElementById("btn-cargar-todo-ejemplo");
+  if (btnCargarTodo) {
+    btnCargarTodo.addEventListener("click", () => {
+      cargarDemoHumedad();
+      cargarDemoVolumetrico();
+      cargarDemoGravedad();
+      showToast("Datos de demostración completos cargados en los 3 ensayos.");
+    });
+  }
 
-  document.getElementById("btn-sync-all").addEventListener("click", () => {
-    updateDashboardSummary();
-    showToast("Cálculos y relaciones geotécnicas sincronizadas.");
-  });
+  const btnSyncAll = document.getElementById("btn-sync-all");
+  if (btnSyncAll) {
+    btnSyncAll.addEventListener("click", () => {
+      updateDashboardSummary();
+      showToast("Cálculos y relaciones geotécnicas sincronizadas.");
+    });
+  }
 }
 
 function updateDashboardPills() {
@@ -1308,9 +1253,13 @@ function updateDashboardPills() {
   setCardBadge("badge-card-vol", volumetrico.calculado);
   setCardBadge("badge-card-gs", gravedad.calculado);
 
-  document.getElementById("check-humedad").textContent = humedad.calculado ? "✅ Humedad por secado" : "⏳ Humedad por secado";
-  document.getElementById("check-vol").textContent = volumetrico.calculado ? "✅ Densidad y pesos volumétricos" : "⏳ Densidad y pesos volumétricos";
-  document.getElementById("check-gs").textContent = gravedad.calculado ? "✅ Gravedad específica de sólidos" : "⏳ Gravedad específica de sólidos";
+  const setCheck = (elId, status, text) => {
+    const el = document.getElementById(elId);
+    if (el) el.textContent = `${status ? "✅" : "⏳"} ${text}`;
+  };
+  setCheck("check-humedad", humedad.calculado, "Humedad por secado");
+  setCheck("check-vol", volumetrico.calculado, "Densidad y pesos volumétricos");
+  setCheck("check-gs", gravedad.calculado, "Gravedad específica de sólidos");
 }
 
 function updateDashboardSummary() {

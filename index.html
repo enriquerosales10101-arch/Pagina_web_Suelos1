@@ -42,15 +42,9 @@
         </div>
       </div>
 
-      <nav class="nav-links">
-        <button class="nav-btn active" id="btn-nav-dashboard" data-target="view-dashboard">
-          <span class="nav-icon">🏠</span> Panel General
-        </button>
-        <button class="nav-btn" id="btn-nav-lab1" data-lab="lab1">
-          <span class="nav-icon">🧪</span> Laboratorio 1
-        </button>
-        <button class="nav-btn" id="btn-nav-lab2" data-lab="lab2">
-          <span class="nav-icon">🪨</span> Laboratorio 2
+      <nav class="nav-links hidden" id="main-nav">
+        <button class="nav-btn" id="btn-nav-home" data-target="view-dashboard">
+          <span class="nav-icon">←</span> Panel Principal
         </button>
       </nav>
 
@@ -64,33 +58,6 @@
       </div>
     </div>
   </header>
-
-  <!-- ==================== SUB-NAVEGACIÓN: ENSAYOS POR LABORATORIO ==================== -->
-  <nav class="sub-nav hidden" id="sub-nav-bar">
-    <div class="sub-nav-container">
-      <span class="sub-nav-label" id="sub-nav-label">Laboratorio 1 · Ensayos</span>
-      <div class="sub-nav-groups">
-        <!-- Ensayos del Laboratorio 1 -->
-        <div class="sub-nav-group" id="subnav-lab1">
-          <button class="subnav-btn" data-target="view-humedad">
-            <span class="nav-icon">💧</span> 01. Humedad
-          </button>
-          <button class="subnav-btn" data-target="view-volumetrico">
-            <span class="nav-icon">⚖️</span> 02. P. Volumétrico
-          </button>
-          <button class="subnav-btn" data-target="view-gravedad">
-            <span class="nav-icon">🔬</span> 03. Gravedad Gs
-          </button>
-        </div>
-        <!-- Ensayos del Laboratorio 2 -->
-        <div class="sub-nav-group" id="subnav-lab2">
-          <button class="subnav-btn" data-target="view-granulometria">
-            <span class="nav-icon">🪨</span> 04. Granulometría
-          </button>
-        </div>
-      </div>
-    </div>
-  </nav>
 
   <!-- ==================== CINTA DE DATOS DEL PROYECTO ==================== -->
   <section class="project-strip">
@@ -130,9 +97,9 @@
     <section class="view active" id="view-dashboard">
       <div class="view-header">
         <div>
-          <h2 class="view-title">Laboratorio 1</h2>
-          <p class="view-desc"><strong>Propiedades Índice y Físicas</strong> — módulo central de procesamiento técnico
-            para ensayos fundamentales de mecánica de suelos.
+          <h2 class="view-title">Panel Principal</h2>
+          <p class="view-desc">Selecciona una opción para realizar un ensayo. El cuadro resumen se actualiza
+            automáticamente a medida que calculas cada uno.
           </p>
         </div>
         <div class="status-summary-pills">
@@ -145,45 +112,7 @@
         </div>
       </div>
 
-      <!-- BANNER CONSOLIDADO EXTERIOR (LABORATORIO 1) -->
-      <div class="consolidated-banner">
-        <div class="banner-badge">DOCUMENTO OFICIAL • LAB 1</div>
-        <div class="banner-content">
-          <div class="banner-text">
-            <div class="banner-icon-title">
-              <span class="banner-icon">📑</span>
-              <div>
-                <h3 class="banner-title">Informe general del Laboratorio 1</h3>
-                <p class="banner-subtitle">Emisión técnica unificada de Propiedades Físicas (ASTM D2216 / D7263 / D854 y
-                  NTP 339)</p>
-              </div>
-            </div>
-            <p class="banner-desc">
-              Genera un documento técnico integral en PDF con la recopilación de los 3 ensayos fundamentales (Contenido
-              de Humedad, Peso Volumétrico y Gravedad Específica de los Sólidos) incluyendo tabla resumen de propiedades
-              geotécnicas y bloque de firmas para validación de laboratorio.
-            </p>
-            <div class="banner-checklist">
-              <span class="check-item" id="check-humedad">⏳ Humedad por secado</span>
-              <span class="check-item" id="check-vol">⏳ Densidad y pesos volumétricos</span>
-              <span class="check-item" id="check-gs">⏳ Gravedad específica de sólidos</span>
-            </div>
-          </div>
-          <div class="banner-actions">
-            <!-- BOTÓN GENERAL EXCLUSIVO DE LABORATORIO 1 -->
-            <button class="btn btn-primary-lg" id="btn-exportar-consolidado-dashboard">
-              <span class="btn-icon">📑</span>
-              <span>Exportar Informe General Lab 1 (PDF)</span>
-            </button>
-            <button class="btn btn-outline" id="btn-cargar-todo-ejemplo">
-              <span class="btn-icon">✨</span>
-              <span>Cargar Datos Demostración Lab 1</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- LAS 3 OPCIONES DE ENSAYO (TARJETAS LAB 1) -->
+      <!-- LAS 3 OPCIONES DE ENSAYO (TARJETAS) -->
       <div class="modules-grid">
         <!-- Tarjeta 1: Contenido de Humedad -->
         <div class="module-card">
@@ -259,7 +188,7 @@
         <div class="section-header-row">
           <div>
             <h3 class="section-title">Síntesis de Propiedades Geotécnicas de la Muestra</h3>
-            <p class="section-subtitle">Valores calculados integrados del Laboratorio 1</p>
+            <p class="section-subtitle">Valores calculados integrados de los ensayos</p>
           </div>
           <button class="btn btn-secondary-sm" id="btn-sync-all">
             <span class="icon">🔄</span> Sincronizar Cálculos
@@ -366,60 +295,7 @@
           <div class="divider-line"></div>
         </div>
 
-        <!-- Cabecera Lab 2 -->
-        <div class="view-header">
-          <div>
-            <h2 class="view-title">Laboratorio 2</h2>
-            <p class="view-desc"><strong>Análisis Granulométrico</strong> — determinación cuantitativa de la distribución
-              de tamaños de partículas por tamizado según norma ASTM D6913 / D6913M y NTP 339.128.</p>
-          </div>
-          <div class="status-summary-pills">
-            <span class="summary-pill" id="pill-lab2-tamizado">Tamizado: <strong
-                class="badge-pending">Pendiente</strong></span>
-            <span class="summary-pill" id="pill-lab2-curva">Curva: <strong
-                class="badge-pending">Pendiente</strong></span>
-            <span class="summary-pill" id="pill-lab2-sucs">SUCS: <strong class="badge-pending">Pendiente</strong></span>
-          </div>
-        </div>
-
-        <!-- BANNER CONSOLIDADO LABORATORIO 2 -->
-        <div class="consolidated-banner">
-          <div class="banner-badge">DOCUMENTO OFICIAL • LAB 2</div>
-          <div class="banner-content">
-            <div class="banner-text">
-              <div class="banner-icon-title">
-                <span class="banner-icon">📈</span>
-                <div>
-                  <h3 class="banner-title">Informe general del Laboratorio 2</h3>
-                  <p class="banner-subtitle">Análisis Granulométrico por Tamizado (ASTM D6913 / D6913M • NTP 339.128 •
-                    Formato UNI FIC)</p>
-                </div>
-              </div>
-              <p class="banner-desc">
-                Emite un informe técnico oficial completo de Laboratorio 2 con tabla de tamices ASTM E11, balance de
-                masa, curva granulométrica semilogarítmica, diámetros característicos (D10, D30, D60), coeficientes Cu y
-                Cc, porcentajes de Grava, Arena y Finos, y clasificación SUCS.
-              </p>
-              <div class="banner-checklist">
-                <span class="check-item" id="check-lab2-lavado">⏳ Tamizado con lavado en malla N°200</span>
-                <span class="check-item" id="check-lab2-curva">⏳ Curva granulométrica semilogarítmica</span>
-                <span class="check-item" id="check-lab2-gradacion">⏳ Coeficientes Cu, Cc y SUCS</span>
-              </div>
-            </div>
-            <div class="banner-actions">
-              <button class="btn btn-primary-lg" id="btn-exportar-consolidado-lab2">
-                <span class="btn-icon">📑</span>
-                <span>Exportar Informe General Lab 2 (PDF)</span>
-              </button>
-              <button class="btn btn-outline" id="btn-cargar-demo-lab2-dash">
-                <span class="btn-icon">✨</span>
-                <span>Cargar Ejemplo UNI FIC (ASTM D6913)</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- ÚNICA TARJETA LAB 2: GRANULOMETRÍA -->
+        <!-- TARJETA(S) DE LA SEGUNDA FILA DE ENSAYOS -->
         <div class="modules-grid">
           <div class="module-card">
             <div class="card-num">04</div>
