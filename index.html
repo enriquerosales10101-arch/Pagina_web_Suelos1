@@ -190,14 +190,9 @@
             <h3 class="section-title">Síntesis de Propiedades Geotécnicas de la Muestra</h3>
             <p class="section-subtitle">Valores calculados integrados de los ensayos</p>
           </div>
-          <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
-            <button class="btn btn-secondary-sm" id="btn-sync-all">
-              <span class="icon">🔄</span> Sincronizar Cálculos
-            </button>
-            <button class="btn btn-primary" id="btn-exportar-general">
-              <span class="btn-icon">📑</span> Exportar Informe General (PDF)
-            </button>
-          </div>
+          <button class="btn btn-secondary-sm" id="btn-sync-all">
+            <span class="icon">🔄</span> Sincronizar Cálculos
+          </button>
         </div>
 
         <div class="table-responsive">
@@ -328,7 +323,124 @@
           </div>
         </div>
 
+        <!-- CUADRO RESUMEN DE GRANULOMETRÍA -->
+        <div class="summary-section">
+          <div class="section-header-row">
+            <div>
+              <h3 class="section-title">Síntesis del Análisis Granulométrico</h3>
+              <p class="section-subtitle">Resultados integrados del ensayo de tamizado</p>
+            </div>
+            <button class="btn btn-secondary-sm" id="btn-sync-lab2">
+              <span class="icon">🔄</span> Sincronizar Granulometría
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table summary-table" id="table-summary-granu">
+              <thead>
+                <tr>
+                  <th>Parámetro</th>
+                  <th>Símbolo</th>
+                  <th>Valor Obtenido</th>
+                  <th>Unidad</th>
+                  <th>Norma / Método</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Clasificación SUCS</td>
+                  <td><strong>SUCS</strong></td>
+                  <td class="font-mono text-primary font-bold" id="td-gsum-sucs">—</td>
+                  <td>—</td>
+                  <td>ASTM D2487</td>
+                  <td id="td-gstatus-sucs"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Contenido de Grava</td>
+                  <td><strong>G</strong></td>
+                  <td class="font-mono font-bold" id="td-gsum-grava">—</td>
+                  <td>%</td>
+                  <td>ASTM D6913</td>
+                  <td id="td-gstatus-grava"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Contenido de Arena</td>
+                  <td><strong>S</strong></td>
+                  <td class="font-mono font-bold" id="td-gsum-arena">—</td>
+                  <td>%</td>
+                  <td>ASTM D6913</td>
+                  <td id="td-gstatus-arena"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Contenido de Finos</td>
+                  <td><strong>F</strong></td>
+                  <td class="font-mono font-bold" id="td-gsum-finos">—</td>
+                  <td>%</td>
+                  <td>ASTM D6913</td>
+                  <td id="td-gstatus-finos"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Diámetro Efectivo D₁₀</td>
+                  <td><strong>D₁₀</strong></td>
+                  <td class="font-mono font-bold" id="td-gsum-d10">—</td>
+                  <td>mm</td>
+                  <td>Curva granulométrica</td>
+                  <td id="td-gstatus-d10"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Diámetro D₃₀</td>
+                  <td><strong>D₃₀</strong></td>
+                  <td class="font-mono font-bold" id="td-gsum-d30">—</td>
+                  <td>mm</td>
+                  <td>Curva granulométrica</td>
+                  <td id="td-gstatus-d30"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Diámetro D₆₀</td>
+                  <td><strong>D₆₀</strong></td>
+                  <td class="font-mono font-bold" id="td-gsum-d60">—</td>
+                  <td>mm</td>
+                  <td>Curva granulométrica</td>
+                  <td id="td-gstatus-d60"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Coeficiente de Uniformidad</td>
+                  <td><strong>Cu</strong></td>
+                  <td class="font-mono text-accent font-bold" id="td-gsum-cu">—</td>
+                  <td>—</td>
+                  <td>D₆₀ / D₁₀</td>
+                  <td id="td-gstatus-cu"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Coeficiente de Curvatura</td>
+                  <td><strong>Cc</strong></td>
+                  <td class="font-mono text-accent font-bold" id="td-gsum-cc">—</td>
+                  <td>—</td>
+                  <td>D₃₀² / (D₁₀·D₆₀)</td>
+                  <td id="td-gstatus-cc"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Factor de Cuarteo</td>
+                  <td><strong>k</strong></td>
+                  <td class="font-mono font-bold" id="td-gsum-k">—</td>
+                  <td>—</td>
+                  <td>Peso total / porción</td>
+                  <td id="td-gstatus-k"><span class="badge badge-pending">Sin cuarteo</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div><!-- /lab2-panel-embedded -->
+
+      <!-- INFORME GENERAL DE TODAS LAS OPCIONES (al final del panel, a la derecha) -->
+      <div style="display:flex; justify-content:flex-end; margin-top:1.75rem;">
+        <button class="btn btn-primary" id="btn-exportar-general">
+          <span class="btn-icon">📑</span> Exportar Informe General (PDF)
+        </button>
+      </div>
 
     </section>
 

@@ -1506,6 +1506,36 @@ function updateDashboardLab2Summary() {
       setHtml(`td-status-lab2-${suffix}`, '<span class="badge badge-pending">Sin procesar</span>');
     });
   }
+
+  // --- Cuadro resumen de granulometría (panel principal) ---
+  const gsumSet = (valId, statusId, value, ok, okText = "Calculado", pendText = "Sin procesar") => {
+    setEl(valId, value);
+    setHtml(statusId, ok
+      ? `<span class="badge badge-success">${okText}</span>`
+      : `<span class="badge badge-pending">${pendText}</span>`);
+  };
+
+  if (g.calculado) {
+    gsumSet("td-gsum-sucs", "td-gstatus-sucs", g.sucs_simbolo || "—", true, "Clasificado");
+    gsumSet("td-gsum-grava", "td-gstatus-grava", g.grava.toFixed(1), true);
+    gsumSet("td-gsum-arena", "td-gstatus-arena", g.arena.toFixed(1), true);
+    gsumSet("td-gsum-finos", "td-gstatus-finos", g.finos.toFixed(1), true);
+    gsumSet("td-gsum-d10", "td-gstatus-d10", g.d10 ? g.d10.toFixed(3) : "—", !!g.d10, "Calculado", "No interpolable");
+    gsumSet("td-gsum-d30", "td-gstatus-d30", g.d30 ? g.d30.toFixed(3) : "—", !!g.d30, "Calculado", "No interpolable");
+    gsumSet("td-gsum-d60", "td-gstatus-d60", g.d60 ? g.d60.toFixed(3) : "—", !!g.d60, "Calculado", "No interpolable");
+    gsumSet("td-gsum-cu", "td-gstatus-cu", g.cu ? g.cu.toFixed(2) : "—", !!g.cu, "Calculado", "N/A");
+    gsumSet("td-gsum-cc", "td-gstatus-cc", g.cc ? g.cc.toFixed(2) : "—", !!g.cc, "Calculado", "N/A");
+    const usoK = g.factor_k && g.factor_k !== 1;
+    gsumSet("td-gsum-k", "td-gstatus-k", usoK ? g.factor_k.toFixed(4) : "1.0000", usoK, "Con cuarteo", "Sin cuarteo");
+  } else {
+    ["sucs", "grava", "arena", "finos", "d10", "d30", "d60", "cu", "cc", "k"].forEach(s => {
+      setEl(`td-gsum-${s}`, "—");
+    });
+    ["sucs", "grava", "arena", "finos", "d10", "d30", "d60", "cu", "cc"].forEach(s => {
+      setHtml(`td-gstatus-${s}`, '<span class="badge badge-pending">Sin procesar</span>');
+    });
+    setHtml("td-gstatus-k", '<span class="badge badge-pending">Sin cuarteo</span>');
+  }
 }
 
 // ===================================================================
