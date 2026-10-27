@@ -2081,6 +2081,7 @@ function renderGraficoGranulometria(puntos) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: false,
       scales: {
         x: {
           type: 'logarithmic',
@@ -3057,7 +3058,7 @@ function generarPDFIndividual(tipo) {
     contentHTML = `
       <div class="pdf-report-page">
         <div class="pdf-header">
-          <div class="pdf-title-main">SOFTWARE DE MECÁNICA DE SUELOS</div>
+          <div class="pdf-title-main">LABORATORIO DE MECÁNICA DE SUELOS • ING. GEOLÓGICA FIGMM</div>
           <div class="pdf-title-sub">INFORME TÉCNICO: DETERMINACIÓN DEL CONTENIDO DE HUMEDAD</div>
           <div class="pdf-norm-ref">Normas de referencia: ASTM D2216 / NTP 339.127 / MTC E108</div>
         </div>
@@ -3190,7 +3191,7 @@ function generarPDFIndividual(tipo) {
     contentHTML = `
       <div class="pdf-report-page">
         <div class="pdf-header">
-          <div class="pdf-title-main">SOFTWARE DE MECÁNICA DE SUELOS</div>
+          <div class="pdf-title-main">LABORATORIO DE MECÁNICA DE SUELOS • ING. GEOLÓGICA FIGMM</div>
           <div class="pdf-title-sub">INFORME TÉCNICO: PESO VOLUMÉTRICO Y DENSIDAD</div>
           <div class="pdf-norm-ref">Normas de referencia: ${v.metodo === "parafina" ? "NTP 339.139 (Muestra Parafinada)" : "ASTM D7263 (Molde Calibrado)"} / MTC E110</div>
         </div>
@@ -3254,7 +3255,7 @@ function generarPDFIndividual(tipo) {
     contentHTML = `
       <div class="pdf-report-page">
         <div class="pdf-header">
-          <div class="pdf-title-main">SOFTWARE DE MECÁNICA DE SUELOS</div>
+          <div class="pdf-title-main">LABORATORIO DE MECÁNICA DE SUELOS • ING. GEOLÓGICA FIGMM</div>
           <div class="pdf-title-sub">INFORME TÉCNICO: GRAVEDAD ESPECÍFICA DE LOS SÓLIDOS (Gs)</div>
           <div class="pdf-norm-ref">Normas de referencia: ASTM D854 / NTP 339.131 / MTC E107</div>
         </div>
@@ -3304,7 +3305,7 @@ function generarPDFIndividual(tipo) {
     contentHTML = `
       <div class="pdf-report-page">
         <div class="pdf-header">
-          <div class="pdf-title-main">SOFTWARE DE MECÁNICA DE SUELOS • GEOLOGÍA FIGMM</div>
+          <div class="pdf-title-main">LABORATORIO DE MECÁNICA DE SUELOS • ING. GEOLÓGICA FIGMM</div>
           <div class="pdf-title-sub">${esAtt ? "INFORME TÉCNICO: LÍMITES DE ATTERBERG" : "INFORME TÉCNICO: ENSAYO DE COMPACTACIÓN PROCTOR"}</div>
           <div class="pdf-norm-ref">${esAtt ? "Normas de referencia: ASTM D4318 / NTP 339.129 / MTC E110-E111" : "Normas de referencia: ASTM D698 / D1557 • NTP 339.141 / 339.142 • MTC E115-E116"}</div>
         </div>
@@ -3317,6 +3318,15 @@ function generarPDFIndividual(tipo) {
 
   printContainer.innerHTML = contentHTML;
   ejecutarDescargaPDF(filename);
+}
+
+// Imagen del gráfico solo si el canvas tiene tamaño (si su vista estuvo oculta no hay bitmap)
+function safeChartImage(chart) {
+  try {
+    if (!chart || !chart.canvas || chart.canvas.width < 20 || chart.canvas.height < 20) return "";
+    const url = chart.toBase64Image();
+    return url && url.length > 200 ? url : "";
+  } catch (e) { return ""; }
 }
 
 // Sección PDF de Límites de Atterberg (individual y general)
@@ -3332,10 +3342,10 @@ function getSeccionPDFAtterberg(num) {
   }
   const f = v => v === null ? "—" : `${v.toFixed(2)} %`;
   let img = "";
-  if (attChartInstance) {
+  if (attChartInstance && safeChartImage(attChartInstance)) {
     try {
       img = `<div style="text-align:center;margin:6px 0;background:#fff;border:1px solid #cbd5e1;border-radius:4px;padding:6px;">
-        <img src="${attChartInstance.toBase64Image()}" style="max-width:100%;height:auto;max-height:230px;" /></div>`;
+        <img src="${safeChartImage(attChartInstance)}" style="max-width:100%;height:auto;max-height:230px;" /></div>`;
     } catch (e) { console.warn("No se pudo exportar el diagrama de fluidez:", e); }
   }
   const filasLL = a.ll_pts.map(p => `<tr><td style="text-align:center;">${p.n}</td><td style="text-align:center;">${p.golpes}</td><td style="text-align:right;">${p.mw.toFixed(2)}</td><td style="text-align:right;">${p.msuelo.toFixed(2)}</td><td style="text-align:right;font-weight:bold;color:#1565c0;">${p.w.toFixed(2)} %</td></tr>`).join("");
@@ -3366,10 +3376,10 @@ function getSeccionPDFProctor(num) {
   const p = GeoState.ensayos.proctor;
   if (!p.calculado) return "";
   let img = "";
-  if (proChartInstance) {
+  if (proChartInstance && safeChartImage(proChartInstance)) {
     try {
       img = `<div style="text-align:center;margin:6px 0;background:#fff;border:1px solid #cbd5e1;border-radius:4px;padding:6px;">
-        <img src="${proChartInstance.toBase64Image()}" style="max-width:100%;height:auto;max-height:230px;" /></div>`;
+        <img src="${safeChartImage(proChartInstance)}" style="max-width:100%;height:auto;max-height:230px;" /></div>`;
     } catch (e) { console.warn("No se pudo exportar la curva Proctor:", e); }
   }
   const filas = p.puntos.map(x => `<tr><td style="text-align:center;">${x.n}</td><td style="text-align:right;">${x.msuelo.toFixed(1)}</td><td style="text-align:right;">${x.rho_h.toFixed(3)}</td><td style="text-align:right;">${x.w.toFixed(2)} %</td><td style="text-align:right;font-weight:bold;color:#1565c0;">${x.rho_d.toFixed(3)}</td></tr>`).join("");
@@ -3529,7 +3539,7 @@ function generarPDFConsolidado() {
   const contentHTML = `
     <div class="pdf-report-page">
       <div class="pdf-header">
-        <div class="pdf-title-main">SOFTWARE DE MECÁNICA DE SUELOS</div>
+        <div class="pdf-title-main">LABORATORIO DE MECÁNICA DE SUELOS • ING. GEOLÓGICA FIGMM</div>
         <div class="pdf-title-sub">INFORME GENERAL DEL LABORATORIO N.º 1</div>
         <div class="pdf-norm-ref">Propiedades Índice y Relaciones Físicas Fundamentales (ASTM D2216 / D854 / NTP 339)</div>
       </div>
@@ -3647,7 +3657,8 @@ function generarPDFConsolidadoLab2() {
   let chartImgHTML = "";
   if (granuChartInstance) {
     try {
-      const dataUrl = granuChartInstance.toBase64Image();
+      const dataUrl = safeChartImage(granuChartInstance);
+      if (!dataUrl) throw new Error("Gráfico no visible: abra la vista del ensayo para incluirlo.");
       chartImgHTML = `
         <div class="pdf-section-title">CURVA GRANULOMÉTRICA SEMILOGARÍTMICA (ASTM D6913)</div>
         <div style="text-align: center; margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px;">
@@ -3662,8 +3673,8 @@ function generarPDFConsolidadoLab2() {
   const contentHTML = `
     <div class="pdf-report-page">
       <div class="pdf-header">
-        <div class="pdf-title-main">SOFTWARE DE MECÁNICA DE SUELOS • GEOLOGÍA FIGMM</div>
-        <div class="pdf-title-sub">INFORME GENERAL DEL LABORATORIO N.º 2</div>
+        <div class="pdf-title-main">LABORATORIO DE MECÁNICA DE SUELOS • ING. GEOLÓGICA FIGMM</div>
+        <div class="pdf-title-sub">INFORME TÉCNICO: ANÁLISIS GRANULOMÉTRICO POR TAMIZADO</div>
         <div class="pdf-norm-ref">Normas de referencia: ASTM D6913 / D6913M • NTP 339.128</div>
       </div>
 
@@ -3695,6 +3706,21 @@ function generarPDFConsolidadoLab2() {
           </tr>
         </tbody>
       </table>
+
+      ${g.comp ? `
+      <div class="pdf-section-title">HOMOGENIZACIÓN PARTE GRUESA / PARTE FINA (MÉTODO COMPUESTO)</div>
+      <table class="pdf-data-table">
+        <thead><tr><th>% Humedad</th><th>Masa seca gruesa</th><th>Masa seca fina total</th><th>Submuestra fina seca (Mo)</th><th>M-1 platillo grueso</th><th>Pérdida lavado gruesa</th><th>Factor K</th></tr></thead>
+        <tbody><tr>
+          <td style="text-align:center;">${g.comp.humedad.toFixed(2)} %</td>
+          <td style="text-align:right;">${g.comp.masa_seca_gruesa.toFixed(1)} g</td>
+          <td style="text-align:right;">${g.comp.masa_seca_fina_total.toFixed(1)} g</td>
+          <td style="text-align:right;">${g.comp.masa_seca_submuestra.toFixed(1)} g</td>
+          <td style="text-align:right;">${g.comp.platillo_m1.toFixed(1)} g</td>
+          <td style="text-align:right;">${g.comp.perdida_gruesa.toFixed(1)} g</td>
+          <td style="text-align:center;font-weight:bold;color:#b71c1c;">${g.factor_k.toFixed(4)}</td>
+        </tr></tbody>
+      </table>` : ""}
 
       <div class="pdf-section-title">REGISTRO DE TAMIZADO POR SERIE ASTM E11</div>
       <table class="pdf-data-table">
@@ -3865,7 +3891,7 @@ function generarPDFGeneral() {
   const contentHTML = `
     <div class="pdf-report-page">
       <div class="pdf-header">
-        <div class="pdf-title-main">SOFTWARE DE MECÁNICA DE SUELOS • GEOLOGÍA FIGMM</div>
+        <div class="pdf-title-main">LABORATORIO DE MECÁNICA DE SUELOS • ING. GEOLÓGICA FIGMM</div>
         <div class="pdf-title-sub">INFORME GENERAL DE RESULTADOS</div>
         <div class="pdf-norm-ref">Resumen integral de ensayos de laboratorio de Mecánica de Suelos</div>
       </div>
