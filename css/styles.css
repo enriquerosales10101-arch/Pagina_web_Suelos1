@@ -1625,7 +1625,7 @@ h5 {
 input.input-control[readonly] { background: var(--bg-card-alt, #f1f5f9); color: var(--neutral-muted, #64748b); cursor: default; }
 
 /* ---- Estilos del PDF también en pantalla (html2pdf renderiza con media "screen") ---- */
-#print-container { background:#ffffff; color:#000000; font-family: Arial, Helvetica, sans-serif; font-size:10pt; }
+#print-container { background:#ffffff; color:#000000; font-family: Arial, Helvetica, sans-serif; font-size:10pt; width:186mm; box-sizing:border-box; }
 #print-container .pdf-report-page { padding: 0; }
 #print-container .pdf-header { text-align:center; border-bottom:2px solid #b71c1c; padding-bottom:8px; margin-bottom:12px; }
 #print-container .pdf-title-main { font-size:14pt; font-weight:800; color:#b71c1c; margin-bottom:2px; }
@@ -1636,10 +1636,10 @@ input.input-control[readonly] { background: var(--bg-card-alt, #f1f5f9); color: 
 #print-container .pdf-meta-label { background:#f1f5f9; font-weight:bold; width:25%; }
 #print-container .pdf-section-title { font-size:10.5pt; font-weight:bold; color:#1565c0; border-bottom:1px solid #cbd5e1; padding-bottom:3px; margin:10px 0 6px 0; }
 #print-container .pdf-data-table { width:100%; border-collapse:collapse; margin-bottom:12px; font-size:8.5pt; }
-#print-container .pdf-data-table th, #print-container .pdf-data-table td { border:0.5pt solid #cbd5e1; padding:3px 5px; }
+#print-container .pdf-data-table th, #print-container .pdf-data-table td { border:0.5pt solid #cbd5e1; padding:2px 4px; }
 #print-container .pdf-data-table th { background:#f1f5f9; font-weight:bold; text-align:center; }
 #print-container .pdf-data-table tr { page-break-inside: avoid; }
-#print-container .pdf-signatures { margin-top:40px; width:100%; display:flex; justify-content:space-around; page-break-inside:avoid; }
+#print-container .pdf-signatures { margin-top:18px; width:100%; display:flex; justify-content:space-around; page-break-inside:avoid; }
 #print-container .pdf-sig-box { text-align:center; width:45%; }
 #print-container .pdf-sig-line { border-top:1px solid #333333; margin-bottom:4px; }
 #print-container .pdf-sig-title { font-size:8.5pt; font-weight:bold; }

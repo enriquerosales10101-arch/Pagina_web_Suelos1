@@ -2127,7 +2127,9 @@ const granuDecorPlugin = {
       ctx.setLineDash([]);
       ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fill();
       ctx.font = 'bold 10px Inter, Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-      ctx.fillText(`${lab}=${d.toFixed(2)}mm`, Math.min(right - 40, Math.max(left + 40, x)), y - 6);
+      const tx = Math.min(right - 40, Math.max(left + 40, x)), tt = `${lab}=${d.toFixed(2)}mm`, tw = ctx.measureText(tt).width;
+      ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.fillRect(tx - tw / 2 - 2, y - 20, tw + 4, 13);
+      ctx.fillStyle = col; ctx.fillText(tt, tx, y - 7);
       ctx.setLineDash([5, 4]);
     });
     ctx.setLineDash([]);
@@ -3740,7 +3742,7 @@ function generarPDFConsolidado() {
 function generarPDFConsolidadoLab2() {
   const printContainer = document.getElementById("print-container");
   const g = GeoState.ensayos.granulometria;
-  const filename = `Informe_General_Laboratorio_2_${GeoState.proyecto.muestra}.pdf`;
+  const filename = `Informe_Granulometria_${GeoState.proyecto.muestra}.pdf`;
 
   let filasHTML = g.tamices.map(t => `
     <tr>
@@ -3763,7 +3765,7 @@ function generarPDFConsolidadoLab2() {
       chartImgHTML = `
         <div class="pdf-section-title">CURVA GRANULOMÉTRICA SEMILOGARÍTMICA (ASTM D6913)</div>
         <div style="text-align: center; margin-bottom: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px;">
-          <img src="${dataUrl}" style="max-width: 100%; height: auto; max-height: 230px;" />
+          <img src="${dataUrl}" style="max-width: 100%; height: auto; max-height: 200px;" />
         </div>
       `;
     } catch (e) {
