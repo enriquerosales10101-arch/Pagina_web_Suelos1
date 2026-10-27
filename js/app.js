@@ -1825,10 +1825,7 @@ function calcularGranulometria() {
       const mFgSubLav = granuNum("sec-f4-masa") || mFgSubSec;
 
       // Humedad: la del encabezado o, si falta, la de la submuestra fina
-      let humedad = granuNum("granu-hdr-humedad");
-      const f1 = granuNum("sec-f1-masa");
-      if (humedad === null && f1) humedad = ((f1 - mFgSubSec) / mFgSubSec) * 100;
-      if (humedad === null) humedad = 0;
+      const humedad = granuNum("granu-hdr-humedad") || 0;
 
       const mFgHum = granuNum("granu-hdr-masa-fina") || 0;
       const mFgSecTotal = mFgHum > 0 ? mFgHum / (1 + humedad / 100) : mFgSubSec;
@@ -1876,48 +1873,36 @@ function calcularGranulometria() {
         suma_eq: sumaEq
       };
     } else {
-      // ---------- TAMIZADO SIMPLE (muestra única) ----------
-      const w1Val = document.getElementById("granu-masa-total").value.trim();
-      const w0Val = document.getElementById("granu-masa-lavada").value.trim();
-      if (!w1Val) throw new Error("Ingrese la Masa Seca Inicial de la muestra (W1).");
-      if (!w0Val) throw new Error("Ingrese la Masa Seca Lavada por tamiz N°200 (W0).");
-      const w1 = parseFloat(w1Val);
-      const w0 = parseFloat(w0Val);
-      if (isNaN(w1) || w1 <= 0) throw new Error("La masa seca inicial (W1) debe ser un número mayor a cero.");
-      if (isNaN(w0) || w0 <= 0) throw new Error("La masa seca lavada (W0) debe ser un número mayor a cero.");
-      if (w0 > w1) throw new Error(`La masa seca lavada (W0 = ${w0}g) no puede ser mayor a la masa seca inicial (W1 = ${w1}g).`);
+      // ---------- TAMIZADO SIMPLE (muestra única) — igual que Suelos_1.py ----------
+      const humSimple = granuNum("granu-hdr-humedad") || 0;
+      let masaSeca = granuNum("granu-masa-total") || granuNum("sec-g3-masa") || granuNum("sec-g2-masa");
+      if (!masaSeca || masaSeca <= 0) {
+        const mHum = granuNum("granu-hdr-masa-total");
+        masaSeca = mHum ? mHum / (1 + humSimple / 100) : null;
+      }
+      if (!masaSeca || masaSeca <= 0) throw new Error("Ingrese una Masa Seca Total válida mayor que cero (o la masa húmeda total con su % de humedad).");
 
-      m_total_sec = w1;
-      masa_lavada = w0;
-      perdida_lavado = w1 - w0;
+      m_total_sec = masaSeca;
+      const w0 = granuNum("granu-masa-lavada");
+      masa_lavada = (w0 && w0 > 0 && w0 <= masaSeca) ? w0 : masaSeca;
+      perdida_lavado = masaSeca - masa_lavada;
 
-      let suma = 0;
-      const crudos = ASTM_SIEVES.map(s => {
-        const m1 = Math.max(0, granuNum(`granu-ret-${s.id}`) || 0);
-        const m2 = Math.max(0, granuNum(`granu-ret2-${s.id}`) || 0);
-        const ret = s.id === 'mmo' ? 0 : m1 + m2;
+      let suma = 0, acum = 0;
+      ASTM_SIEVES.forEach(s => {
+        const m1 = s.id === 'mmo' ? 0 : Math.max(0, granuNum(`granu-ret-${s.id}`) || 0);
+        const m2 = s.id === 'mmo' ? 0 : Math.max(0, granuNum(`granu-ret2-${s.id}`) || 0);
+        const ret = m1 + m2;
         suma += ret;
-        return { s, m1: s.id === 'mmo' ? 0 : m1, m2: s.id === 'mmo' ? 0 : m2, ret };
-      });
-      if (suma <= 0) throw new Error("Ingrese los valores de masa retenida en los tamices.");
-
-      const error_g = w0 - suma;
-      porc_error = (Math.abs(error_g) / w0) * 100.0;
-      let maxIdx = -1, maxVal = -1;
-      crudos.forEach((c, i) => { if (c.s.abertura > 0 && c.ret > maxVal) { maxVal = c.ret; maxIdx = i; } });
-
-      let acum = 0;
-      crudos.forEach((c, i) => {
-        let corr = c.ret;
-        if (porc_error <= 1.0 && i === maxIdx) corr += error_g;
-        const parcial = (corr / w1) * 100.0;
+        const parcial = (ret / masaSeca) * 100.0;
         acum += parcial;
         items.push({
-          id: c.s.id, nombre: c.s.nombre, abertura: c.s.abertura, desc: c.s.desc,
-          m1: c.m1, m2: c.m2, retenido: c.ret, corregido: corr,
+          id: s.id, nombre: s.nombre, abertura: s.abertura, desc: s.desc,
+          m1, m2, retenido: ret, corregido: ret,
           porc_parcial: parcial, porc_acumulado: acum, porc_pasa: Math.max(0, 100 - acum)
         });
       });
+      // Error de tamizado: |masa seca − Σ(M1+M2)| / masa seca (criterio ≤ 1 %)
+      porc_error = Math.abs(masaSeca - suma) / masaSeca * 100.0;
     }
 
     const suma_retenido = items.reduce((a, t) => a + t.corregido, 0);
@@ -2224,8 +2209,8 @@ function cargarDemoGranuSimple() {
   if (radio) radio.checked = true;
   aplicarMetodoGranu();
 
-  document.getElementById("granu-masa-total").value = "2900.00";
-  document.getElementById("granu-masa-lavada").value = "2708.00";
+  document.getElementById("granu-masa-total").value = "2708.00";
+  document.getElementById("granu-masa-lavada").value = "";
 
   const demoRetenidos = {
     '3in': '0.00',
@@ -2256,7 +2241,7 @@ function cargarDemoGranuSimple() {
   });
 
   const perdidaEl = document.getElementById("granu-live-perdida");
-  if (perdidaEl) perdidaEl.textContent = "192.00 g (6.62 %)";
+  if (perdidaEl) perdidaEl.textContent = "0.00 g (0.00 %)";
 
   document.getElementById("granu-obs").value = "Muestra ensayada por Tamizado Simple con lavado en malla N°200 según Norma ASTM D6913 / NTP 339.128.";
   calcularGranulometria();
