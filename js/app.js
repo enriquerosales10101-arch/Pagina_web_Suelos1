@@ -1671,8 +1671,10 @@ function renderGranulometriaTable() {
   const claseTipo = id => (id === 'n4' ? 'granu-row-n4' : (id === 'n200' ? 'granu-row-n200' : (id === 'mmo' ? 'granu-row-mmo' : '')));
   const etiqueta = id => (id === 'n4' ? ' <span class="granu-tag granu-tag-blue">Grava/Arena</span>'
     : (id === 'n200' ? ' <span class="granu-tag granu-tag-violet">Arena/Finos</span>'
-      : (id === 'mmo' ? ' <span class="granu-tag granu-tag-orange">Auto-calculado</span>' : '')));
+      : (id === 'mmo' ? ' <span class="granu-tag granu-tag-orange">Auto-calculado</span>'
+        : (id === 'n10' ? ' <span class="granu-tag granu-tag-blue">Platillo col. 1</span>' : ''))));
 
+  // Entrada: SOLO Masa 1 y Masa 2
   let html = "";
   ASTM_SIEVES.forEach((s, idx) => {
     const auto = s.id === 'mmo';
@@ -1687,16 +1689,26 @@ function renderGranulometriaTable() {
         <td>
           <input type="number" step="0.01" class="input-control font-mono" id="granu-ret2-${s.id}" placeholder="0.00" ${auto ? 'readonly tabindex="-1"' : ''}>
         </td>
-        <td><input type="number" step="0.01" class="input-control font-mono granu-pct" data-row="${s.id}" id="granu-pp-${s.id}" placeholder="—" ${auto ? 'readonly tabindex="-1"' : ''}></td>
-        <td><input type="number" step="0.01" class="input-control font-mono granu-pct" data-row="${s.id}" id="granu-pa-${s.id}" placeholder="—" ${auto ? 'readonly tabindex="-1"' : ''}></td>
-        <td><input type="number" step="0.01" class="input-control font-mono granu-pct font-bold" data-row="${s.id}" id="granu-pasa-${s.id}" placeholder="—" ${auto ? 'readonly tabindex="-1"' : ''}></td>
       </tr>
     `;
   });
   tbody.innerHTML = html;
 
+  // Opcional: ingreso directo por porcentajes (cuando el problema no da masas)
+  const tbodyPct = document.getElementById("tbody-granu-pct-inputs");
+  if (tbodyPct) {
+    tbodyPct.innerHTML = ASTM_SIEVES.filter(s => s.id !== 'mmo').map(s => `
+      <tr>
+        <td><strong>${s.nombre}</strong></td>
+        <td class="font-mono text-center">${s.abertura > 0 ? s.abertura.toFixed(3) : '—'}</td>
+        <td><input type="number" step="0.01" class="input-control font-mono granu-pct" data-row="${s.id}" id="granu-pp-${s.id}" placeholder="—"></td>
+        <td><input type="number" step="0.01" class="input-control font-mono granu-pct" data-row="${s.id}" id="granu-pa-${s.id}" placeholder="—"></td>
+        <td><input type="number" step="0.01" class="input-control font-mono granu-pct" data-row="${s.id}" id="granu-pasa-${s.id}" placeholder="—"></td>
+      </tr>`).join("");
+  }
+
   // Al editar un % de una fila se borran los otros dos de esa fila (el último editado manda)
-  tbody.querySelectorAll("input.granu-pct").forEach(inp => {
+  document.querySelectorAll("input.granu-pct").forEach(inp => {
     inp.addEventListener("input", () => {
       const fila = inp.dataset.row;
       ["pp", "pa", "pasa"].forEach(k => {
@@ -1843,15 +1855,19 @@ function calcularGranulometria() {
         return { s, v1, v2 };
       });
 
-      // Platillo grueso = M1 de los tamices que además tienen M2 (frontera gruesa/fina): va al numerador de K
-      const platilloM1 = crudos.reduce((a, c) => a + ((c.s.id !== 'mmo' && c.v2 > 0 && c.v1 > 0) ? c.v1 : 0), 0);
-      factor_k = (mFgSecTotal + platilloM1 + perdCg) / mFgSubSec;
+      // Zona fina = malla N°10 (2.00 mm) y más finas + platillo. Lo que la parte gruesa dejó ahí
+      // (columna 1) es "platillo de la columna 1": no se pesa como grueso, entra al numerador de K.
+      const esZonaFina = s => s.abertura <= 2.0 + 1e-9 || s.id === 'pan';
+      const platilloM1 = crudos.reduce((a, c) => a + ((c.s.id !== 'mmo' && esZonaFina(c.s)) ? c.v1 : 0), 0);
+      const sumaCol2 = crudos.reduce((a, c) => a + c.v2, 0); // incluye M-Mo de la columna 2
+      // K = (masa seca fina total + platillo col.1 + M-Mo col.1) / Σ de toda la columna 2
+      factor_k = (mFgSecTotal + platilloM1 + perdCg) / (sumaCol2 > 0 ? sumaCol2 : mFgSubSec);
 
-      // 2do paso: masa homogenizada y porcentajes
+      // 2do paso: masa única (homogenizada) y porcentajes
       let acum = 0, sumaM1 = 0, sumaM2 = 0, sumaEq = 0;
       crudos.forEach(({ s, v1, v2 }) => {
         if (s.id !== 'mmo') { sumaM1 += v1; sumaM2 += v2; }
-        const mEq = (v2 > 0 || s.id === 'mmo') ? v2 * factor_k : v1 + v2 * factor_k;
+        const mEq = (s.id === 'mmo' || esZonaFina(s)) ? v2 * factor_k : v1 + v2 * factor_k;
         sumaEq += mEq;
         const parcial = m_total_sec > 0 ? (mEq / m_total_sec) * 100 : 0;
         acum += parcial;
@@ -2054,15 +2070,6 @@ function renderResultadosGranulometria() {
     tbody.appendChild(tr);
 
     // Reflejar los % también en la tabla de entrada de tamices (como el formato)
-    if (t.id !== 'mmo' || g.modo !== "porcentajes") {
-      const ppEl = document.getElementById(`granu-pp-${t.id}`);
-      if (ppEl) ppEl.value = t.porc_parcial.toFixed(2);
-      const paEl = document.getElementById(`granu-pa-${t.id}`);
-      if (paEl) paEl.value = t.porc_acumulado.toFixed(2);
-      const pasaEl = document.getElementById(`granu-pasa-${t.id}`);
-      if (pasaEl) pasaEl.value = t.porc_pasa.toFixed(2);
-    }
-
     // M - Mo se autocalcula en compuesto: mostrarlo en las celdas de entrada
     if (t.id === 'mmo') {
       const a = document.getElementById("granu-ret-mmo");
@@ -2074,6 +2081,70 @@ function renderResultadosGranulometria() {
 
   renderGraficoGranulometria(g.tamices);
 }
+
+// Decoración de la curva (como en el programa de escritorio): zonas, guías D10/D30/D60 y cuadro de parámetros
+const granuDecorPlugin = {
+  id: 'granuDecor',
+  afterDatasetsDraw(chart) {
+    const g = GeoState.ensayos.granulometria;
+    if (!g.calculado) return;
+    const { ctx, chartArea, scales } = chart;
+    const { left, right, top, bottom, height } = chartArea;
+    const sx = scales.x, sy = scales.y;
+    const px = v => Math.min(right, Math.max(left, sx.getPixelForValue(v)));
+    ctx.save();
+
+    // Zonas del suelo (franja superior)
+    const zh = Math.max(15, height * 0.07);
+    const zonas = [
+      [75, 4.75, `GRAVA (${g.grava.toFixed(1)}%)`, '#FEF3C7', '#92400E'],
+      [4.75, 2.0, 'A. Gruesa', '#D1FAE5', '#065F46'],
+      [2.0, 0.425, 'A. Media', '#A7F3D0', '#065F46'],
+      [0.425, 0.075, 'A. Fina', '#6EE7B7', '#065F46'],
+      [0.075, 0.01, `FINOS (${g.finos.toFixed(1)}%)`, '#EDE9FE', '#5B21B6']
+    ];
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    zonas.forEach(([a, b, txt, bg, fg]) => {
+      const xa = px(a), xb = px(b), x0 = Math.min(xa, xb), w = Math.abs(xb - xa);
+      ctx.fillStyle = bg; ctx.fillRect(x0, top, w, zh);
+      ctx.fillStyle = fg; ctx.font = 'bold 10px Inter, Arial, sans-serif';
+      if (w > 26) ctx.fillText(txt, x0 + w / 2, top + zh / 2, w - 4);
+    });
+
+    // Divisorias verticales
+    ctx.setLineDash([2, 3]); ctx.strokeStyle = '#94A3B8'; ctx.lineWidth = 1;
+    [4.75, 2.0, 0.425, 0.075].forEach(v => {
+      const x = px(v); ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, bottom); ctx.stroke();
+    });
+
+    // Guías D60, D30, D10
+    ctx.setLineDash([5, 4]); ctx.lineWidth = 1.2;
+    [[g.d60, 60, '#DC2626', 'D60'], [g.d30, 30, '#D97706', 'D30'], [g.d10, 10, '#2563EB', 'D10']].forEach(([d, p, col, lab]) => {
+      if (!d || d <= 0) return;
+      const x = px(d), y = sy.getPixelForValue(p);
+      ctx.strokeStyle = col; ctx.fillStyle = col;
+      ctx.beginPath(); ctx.moveTo(x, bottom); ctx.lineTo(x, y); ctx.lineTo(left, y); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.font = 'bold 10px Inter, Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillText(`${lab}=${d.toFixed(2)}mm`, Math.min(right - 40, Math.max(left + 40, x)), y - 6);
+      ctx.setLineDash([5, 4]);
+    });
+    ctx.setLineDash([]);
+
+    // Cuadro de parámetros
+    const l1 = `Grava: ${g.grava.toFixed(1)}% | Arena: ${g.arena.toFixed(1)}% | Finos: ${g.finos.toFixed(1)}%`;
+    const l2 = `Cu = ${g.cu ? g.cu.toFixed(2) : '—'}  |  Cc = ${g.cc ? g.cc.toFixed(2) : '—'}  |  SUCS: ${g.sucs_simbolo}`;
+    ctx.font = 'bold 10.5px Inter, Arial, sans-serif';
+    const w = Math.max(ctx.measureText(l1).width, ctx.measureText(l2).width) + 18, h = 40;
+    const bx = left + 10, by = bottom - h - 10;
+    ctx.fillStyle = 'rgba(248,250,252,0.96)'; ctx.strokeStyle = '#94A3B8'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(bx, by, w, h, 6) : ctx.rect(bx, by, w, h); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#0F172A'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(l1, bx + 9, by + 13); ctx.fillText(l2, bx + 9, by + 28);
+    ctx.restore();
+  }
+};
 
 function renderGraficoGranulometria(puntos) {
   const canvas = document.getElementById("granu-chart");
@@ -2091,6 +2162,7 @@ function renderGraficoGranulometria(puntos) {
 
   granuChartInstance = new Chart(ctx, {
     type: 'line',
+    plugins: [granuDecorPlugin],
     data: {
       datasets: [{
         label: '% Que Pasa (ASTM D6913)',
@@ -3760,7 +3832,7 @@ function generarPDFConsolidadoLab2() {
             <th>Abertura (mm)</th>
             <th>M-1 Gruesa (g)</th>
             <th>M-2 Fina (g)</th>
-            <th>Masa homog. (g)</th>
+            <th>Masa única (g)</th>
             <th>% Parcial</th>
             <th>% Acumulado</th>
             <th>% Que Pasa</th>

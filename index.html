@@ -1599,9 +1599,10 @@
             </div>
             <p class="field-hint">Con el <strong>Método A Compuesto</strong> las masas salen de <strong>Datos del Ensayo</strong>
               y <strong>Control de Secado</strong> (masa seca gruesa, masa seca de la submuestra fina Mo, masas lavadas y
-              % de humedad). El factor <strong>K = (Masa seca fina total + M-1 de los tamices con M-2 + pérdida de lavado
-              gruesa) ÷ Mo</strong> se calcula solo y se aplica a toda la columna <strong>M-2</strong>. La fila
-              <strong>M - Mo</strong> también se autocalcula.</p>
+              % de humedad). El factor <strong>K = (Masa seca fina total + platillo de la columna 1 + M-Mo de la columna 1) ÷ suma de toda la
+              columna 2</strong> se calcula solo. El <strong>platillo de la columna 1</strong> es lo que la parte gruesa
+              dejó en la malla N°10 (y en el platillo); <strong>M-Mo (col. 1)</strong> = masa seca gruesa − masa seca lavada.
+              K se aplica a la columna <strong>Masa 2</strong> y la fila <strong>M - Mo</strong> también se autocalcula.</p>
           </div>
 
           <!-- Tabla de Tamices ASTM E11 -->
@@ -1610,9 +1611,9 @@
               <span class="card-head-icon">🕳️</span>
               <h4 class="card-head-title">Registro de Masas Retenidas en Serie de Tamices</h4>
             </div>
-            <p class="field-hint">Serie de tamices según norma ASTM E11 / ASTM D6913. <strong>M-1</strong>: retenido de la
-              parte gruesa. <strong>M-2</strong>: retenido de la submuestra fina, que se multiplica por el factor K
-              (automático). En Método Simple usa solo la columna M-1.</p>
+            <p class="field-hint">Serie de tamices según norma ASTM E11 / ASTM D6913. <strong>Masa 1</strong>: retenido de la
+              parte gruesa (lo que cae en la malla N°10 es el <em>platillo de la columna 1</em>). <strong>Masa 2</strong>: retenido de la
+              submuestra fina. K es automático y los % salen en Resultados.</p>
 
             <div class="table-responsive">
               <table class="data-table input-table" id="table-granu-inputs">
@@ -1623,9 +1624,6 @@
                     <th>Abertura (mm)</th>
                     <th>Masa 1 · Gruesa<br><span style="font-weight:400;font-size:0.72rem;">M-1 (g)</span></th>
                     <th>Masa 2 · Fina<br><span style="font-weight:400;font-size:0.72rem;">M-2 (g)</span></th>
-                    <th>% Parcial<br><span style="font-weight:400;font-size:0.72rem;">retenido</span></th>
-                    <th>% Acum.<br><span style="font-weight:400;font-size:0.72rem;">retenido</span></th>
-                    <th>% Que<br><span style="font-weight:400;font-size:0.72rem;">pasa</span></th>
                   </tr>
                 </thead>
                 <tbody id="tbody-granu-inputs">
@@ -1634,6 +1632,28 @@
               </table>
             </div>
           </div>
+
+          <!-- Ingreso directo por porcentajes (opcional) -->
+          <details class="form-card" id="card-granu-pct">
+            <summary style="cursor:pointer; font-weight:700;">% Ingreso directo por porcentajes
+              <span class="opcional-tag">(opcional: solo si el problema no da masas)</span></summary>
+            <p class="field-hint" style="margin-top:0.6rem;">Deja <strong>Masa 1</strong> y <strong>Masa 2</strong> vacías y completa
+              al menos una columna de %. En cada tamiz sirve cualquiera de las tres; el resultado sale igual que con masas.</p>
+            <div class="table-responsive">
+              <table class="data-table input-table">
+                <thead>
+                  <tr>
+                    <th>Tamiz</th>
+                    <th>Abertura (mm)</th>
+                    <th>% Parcial<br><span style="font-weight:400;font-size:0.72rem;">retenido</span></th>
+                    <th>% Acum.<br><span style="font-weight:400;font-size:0.72rem;">retenido</span></th>
+                    <th>% Que<br><span style="font-weight:400;font-size:0.72rem;">pasa</span></th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-granu-pct-inputs"></tbody>
+              </table>
+            </div>
+          </details>
 
           <!-- Observaciones -->
           <div class="form-card">
@@ -1755,7 +1775,7 @@
                       <th>Abertura (mm)</th>
                       <th>M-1 Gruesa (g)</th>
                       <th>M-2 Fina (g)</th>
-                      <th>Masa homog. (g)</th>
+                      <th>Masa única (g)<br><span style="font-weight:400;font-size:0.72rem;">homogenizada</span></th>
                       <th>% Parcial</th>
                       <th>% Acumulado</th>
                       <th>% Que Pasa</th>
