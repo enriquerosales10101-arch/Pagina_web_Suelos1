@@ -1587,7 +1587,8 @@ function updateDashboardLab2Summary() {
     gsumSet("td-gsum-k", "td-gstatus-k", usoK ? g.factor_k.toFixed(4) : "1.0000", usoK, "Homogenizado", "Método simple");
     gsumSet("td-gsum-arenas", "td-gstatus-arenas", `${g.arena_gruesa.toFixed(1)} / ${g.arena_media.toFixed(1)} / ${g.arena_fina.toFixed(1)}`, true);
     gsumSet("td-gsum-aashto", "td-gstatus-aashto", g.aashto, true, "Clasificado");
-    gsumSet("td-gsum-error", "td-gstatus-error", `${g.porc_error.toFixed(2)}`, g.porc_error <= 1.0, "Conforme (≤ 1%)", "Revisar (> 1%)");
+    if (g.modo === "porcentajes") gsumSet("td-gsum-error", "td-gstatus-error", "—", false, "", "No aplica (sin masas)");
+    else gsumSet("td-gsum-error", "td-gstatus-error", `${g.porc_error.toFixed(2)}`, g.porc_error <= 1.0, "Conforme (≤ 1%)", "Revisar (> 1%)");
   } else {
     ["sucs", "grava", "arena", "finos", "d10", "d30", "d60", "cu", "cc", "k", "arenas", "aashto", "error"].forEach(s => {
       setEl(`td-gsum-${s}`, "—");
@@ -1686,13 +1687,24 @@ function renderGranulometriaTable() {
         <td>
           <input type="number" step="0.01" class="input-control font-mono" id="granu-ret2-${s.id}" placeholder="0.00" ${auto ? 'readonly tabindex="-1"' : ''}>
         </td>
-        <td class="font-mono text-center" id="granu-pp-${s.id}">—</td>
-        <td class="font-mono text-center" id="granu-pa-${s.id}">—</td>
-        <td class="font-mono text-center font-bold text-primary" id="granu-pasa-${s.id}">—</td>
+        <td><input type="number" step="0.01" class="input-control font-mono granu-pct" data-row="${s.id}" id="granu-pp-${s.id}" placeholder="—" ${auto ? 'readonly tabindex="-1"' : ''}></td>
+        <td><input type="number" step="0.01" class="input-control font-mono granu-pct" data-row="${s.id}" id="granu-pa-${s.id}" placeholder="—" ${auto ? 'readonly tabindex="-1"' : ''}></td>
+        <td><input type="number" step="0.01" class="input-control font-mono granu-pct font-bold" data-row="${s.id}" id="granu-pasa-${s.id}" placeholder="—" ${auto ? 'readonly tabindex="-1"' : ''}></td>
       </tr>
     `;
   });
   tbody.innerHTML = html;
+
+  // Al editar un % de una fila se borran los otros dos de esa fila (el último editado manda)
+  tbody.querySelectorAll("input.granu-pct").forEach(inp => {
+    inp.addEventListener("input", () => {
+      const fila = inp.dataset.row;
+      ["pp", "pa", "pasa"].forEach(k => {
+        const el = document.getElementById(`granu-${k}-${fila}`);
+        if (el && el !== inp) el.value = "";
+      });
+    });
+  });
 }
 
 // -------------------------------------------------------------------
@@ -1776,7 +1788,33 @@ function calcularGranulometria() {
     let items = [];
     let datosComp = null;
 
-    if (compuesto) {
+    // ¿Hay masas retenidas? Si no, se trabaja con los porcentajes escritos a mano
+    const hayMasas = ASTM_SIEVES.some(s => s.id !== 'mmo' &&
+      ((granuNum(`granu-ret-${s.id}`) || 0) > 0 || (granuNum(`granu-ret2-${s.id}`) || 0) > 0));
+    let modoPct = false;
+
+    if (!hayMasas) {
+      // ---------- MODO PORCENTAJES (el problema no da masas) ----------
+      modoPct = true;
+      let acum = 0, hayDato = false;
+      ASTM_SIEVES.forEach(s => {
+        const pp = granuNum(`granu-pp-${s.id}`), pa = granuNum(`granu-pa-${s.id}`), ps = granuNum(`granu-pasa-${s.id}`);
+        let nuevo = acum;
+        if (s.id === 'mmo') { /* sin masas no aplica */ }
+        else if (ps !== null) { nuevo = 100 - ps; hayDato = true; }
+        else if (pa !== null) { nuevo = pa; hayDato = true; }
+        else if (pp !== null) { nuevo = acum + pp; hayDato = true; }
+        if (nuevo < -0.001 || nuevo > 100.001) throw new Error(`Los porcentajes de ${s.nombre} están fuera de 0–100 %.`);
+        if (nuevo + 0.01 < acum) throw new Error(`En ${s.nombre} el % acumulado retenido disminuye respecto al tamiz anterior: revise los porcentajes.`);
+        items.push({
+          id: s.id, nombre: s.nombre, abertura: s.abertura, desc: s.desc,
+          m1: 0, m2: 0, retenido: 0, corregido: 0,
+          porc_parcial: nuevo - acum, porc_acumulado: nuevo, porc_pasa: Math.max(0, 100 - nuevo)
+        });
+        acum = nuevo;
+      });
+      if (!hayDato) throw new Error("Ingrese las masas retenidas o, si el problema solo da porcentajes, complete al menos una columna de % (parcial, acumulado o que pasa).");
+    } else if (compuesto) {
       // ---------- TAMIZADO COMPUESTO (Parte Gruesa + Parte Fina) ----------
       const mCgSec = granuNum("sec-g3-masa") || granuNum("sec-g2-masa");
       if (!mCgSec || mCgSec <= 0) throw new Error("Ingrese la Masa Seca de la Parte Gruesa en 'Control de Secado' (> 0).");
@@ -1883,7 +1921,7 @@ function calcularGranulometria() {
     }
 
     const suma_retenido = items.reduce((a, t) => a + t.corregido, 0);
-    const error_gramos = m_total_sec - suma_retenido;
+    const error_gramos = modoPct ? 0 : m_total_sec - suma_retenido;
     const porc_perdida_lavado = m_total_sec > 0 ? (perdida_lavado / m_total_sec) * 100.0 : 0;
 
     // ---------- Fracciones (ASTM D2487) ----------
@@ -1924,7 +1962,8 @@ function calcularGranulometria() {
 
     GeoState.ensayos.granulometria = {
       calculado: true,
-      metodo: compuesto ? "compuesto" : "simple",
+      metodo: modoPct ? "porcentajes" : (compuesto ? "compuesto" : "simple"),
+      modo: modoPct ? "porcentajes" : "masas",
       masa_total: m_total_sec,
       masa_lavada,
       perdida_lavado,
@@ -1997,8 +2036,8 @@ function renderResultadosGranulometria() {
   // Sub-fracciones de arena, factor K y AASHTO
   const setT = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
   setT("granu-res-arenas", `Gruesa ${g.arena_gruesa.toFixed(1)} • Media ${g.arena_media.toFixed(1)} • Fina ${g.arena_fina.toFixed(1)} %`);
-  setT("granu-res-k", g.metodo === "compuesto" ? `K = ${g.factor_k.toFixed(4)}` : "K = 1.0000");
-  setT("granu-res-k-sub", g.metodo === "compuesto" ? `Masa seca total: ${g.masa_total.toFixed(1)} g` : "Método simple (sin homogenización)");
+  setT("granu-res-k", g.metodo === "compuesto" ? `K = ${g.factor_k.toFixed(4)}` : (g.modo === "porcentajes" ? "—" : "K = 1.0000"));
+  setT("granu-res-k-sub", g.metodo === "compuesto" ? `Masa seca total: ${g.masa_total.toFixed(1)} g` : (g.modo === "porcentajes" ? "Datos ingresados como porcentajes" : "Método simple (sin homogenización)"));
   setT("granu-res-aashto", g.aashto);
   setT("granu-res-aashto-sub", `Límites: ${g.aashto_origen}`);
 
@@ -2007,7 +2046,10 @@ function renderResultadosGranulometria() {
   const detalle = g.comp
     ? ` (gruesa ${g.comp.err_gruesa.toFixed(2)} % • fina ${g.comp.err_fina.toFixed(2)} %)`
     : ` (${g.error_gramos.toFixed(2)} g)`;
-  document.getElementById("granu-res-error-text").textContent =
+  if (g.modo === "porcentajes") {
+    document.getElementById("granu-res-error-text").textContent =
+      "Datos ingresados directamente como porcentajes (sin masas): no hay balance de masas ni error de tamizado.";
+  } else document.getElementById("granu-res-error-text").textContent =
     `ΔError = ${g.porc_error.toFixed(2)} %${detalle} • Σ masa homogenizada: ${g.suma_retenido.toFixed(2)} g • Tolerancia ASTM D6913: ${errStatus}`;
 
   const tbody = document.getElementById("tbody-granu-breakdown");
@@ -2019,7 +2061,7 @@ function renderResultadosGranulometria() {
       <td class="font-mono text-center">${t.abertura > 0 ? t.abertura.toFixed(3) : '—'}</td>
       <td class="font-mono text-right">${t.m1 > 0 ? t.m1.toFixed(2) : '—'}</td>
       <td class="font-mono text-right">${t.m2 > 0 ? t.m2.toFixed(2) : '—'}</td>
-      <td class="font-mono text-right font-bold">${t.corregido.toFixed(2)}</td>
+      <td class="font-mono text-right font-bold">${g.modo === "porcentajes" ? '—' : t.corregido.toFixed(2)}</td>
       <td class="font-mono text-right">${t.porc_parcial.toFixed(2)} %</td>
       <td class="font-mono text-right">${t.porc_acumulado.toFixed(2)} %</td>
       <td class="font-mono text-right font-bold text-primary">${t.porc_pasa.toFixed(2)} %</td>
@@ -2027,12 +2069,14 @@ function renderResultadosGranulometria() {
     tbody.appendChild(tr);
 
     // Reflejar los % también en la tabla de entrada de tamices (como el formato)
-    const ppEl = document.getElementById(`granu-pp-${t.id}`);
-    if (ppEl) ppEl.textContent = `${t.porc_parcial.toFixed(2)}`;
-    const paEl = document.getElementById(`granu-pa-${t.id}`);
-    if (paEl) paEl.textContent = `${t.porc_acumulado.toFixed(2)}`;
-    const pasaEl = document.getElementById(`granu-pasa-${t.id}`);
-    if (pasaEl) pasaEl.textContent = `${t.porc_pasa.toFixed(2)}`;
+    if (t.id !== 'mmo' || g.modo !== "porcentajes") {
+      const ppEl = document.getElementById(`granu-pp-${t.id}`);
+      if (ppEl) ppEl.value = t.porc_parcial.toFixed(2);
+      const paEl = document.getElementById(`granu-pa-${t.id}`);
+      if (paEl) paEl.value = t.porc_acumulado.toFixed(2);
+      const pasaEl = document.getElementById(`granu-pasa-${t.id}`);
+      if (pasaEl) pasaEl.value = t.porc_pasa.toFixed(2);
+    }
 
     // M - Mo se autocalcula en compuesto: mostrarlo en las celdas de entrada
     if (t.id === 'mmo') {
@@ -2155,7 +2199,7 @@ function limpiarGranulometria() {
     if (input2) input2.value = "";
     ["granu-pp-", "granu-pa-", "granu-pasa-"].forEach(pfx => {
       const c = document.getElementById(pfx + s.id);
-      if (c) c.textContent = "—";
+      if (c) c.value = "";
     });
   });
 
@@ -3647,7 +3691,7 @@ function generarPDFConsolidadoLab2() {
       <td style="text-align: center;">${t.abertura > 0 ? t.abertura.toFixed(3) : '—'}</td>
       <td style="text-align: right;">${t.m1 > 0 ? t.m1.toFixed(2) : '—'}</td>
       <td style="text-align: right;">${t.m2 > 0 ? t.m2.toFixed(2) : '—'}</td>
-      <td style="text-align: right; font-weight: bold;">${t.corregido.toFixed(2)}</td>
+      <td style="text-align: right; font-weight: bold;">${g.modo === "porcentajes" ? '—' : t.corregido.toFixed(2)}</td>
       <td style="text-align: right;">${t.porc_parcial.toFixed(2)} %</td>
       <td style="text-align: right;">${t.porc_acumulado.toFixed(2)} %</td>
       <td style="text-align: right; font-weight: bold; color: #1565c0;">${t.porc_pasa.toFixed(2)} %</td>
@@ -3681,6 +3725,7 @@ function generarPDFConsolidadoLab2() {
       ${getPlantillaMetadatosHTML()}
       ${getPlantillaEncabezadoGranuHTML()}
 
+      ${g.modo === "porcentajes" ? `<p style="font-size:8.5pt;"><em>Granulometría calculada a partir de porcentajes ingresados directamente (sin masas retenidas).</em></p>` : `
       <div class="pdf-section-title">CONTROL DE MASAS Y PÉRDIDA POR LAVADO EN MALLA N.° 200</div>
       <table class="pdf-data-table">
         <thead>
@@ -3705,7 +3750,7 @@ function generarPDFConsolidadoLab2() {
             </td>
           </tr>
         </tbody>
-      </table>
+      </table>`}
 
       ${g.comp ? `
       <div class="pdf-section-title">HOMOGENIZACIÓN PARTE GRUESA / PARTE FINA (MÉTODO COMPUESTO)</div>
