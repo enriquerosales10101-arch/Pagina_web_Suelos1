@@ -1611,3 +1611,12 @@ h5 {
 .hidden-section {
   display: none !important;
 }
+/* ---- Granulometría: etiquetas y filas especiales de la tabla de tamices ---- */
+.granu-tag { display:inline-block; font-size:0.62rem; font-weight:700; padding:1px 6px; border-radius:999px; margin-left:4px; vertical-align:middle; }
+.granu-tag-blue { background:#dbeafe; color:#1d4ed8; }
+.granu-tag-violet { background:#f3e8ff; color:#7e22ce; }
+.granu-tag-orange { background:#ffedd5; color:#c2410c; }
+.granu-row-n4 td { background: rgba(59,130,246,0.08); }
+.granu-row-n200 td { background: rgba(168,85,247,0.08); }
+.granu-row-mmo td { background: rgba(249,115,22,0.08); }
+input.input-control[readonly] { background: var(--bg-card-alt, #f1f5f9); color: var(--neutral-muted, #64748b); cursor: default; }

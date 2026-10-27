@@ -191,7 +191,7 @@ const ASTM_SIEVES = [
   { id: '3_4in', nombre: '3/4"', abertura: 19.000, desc: '19.0 mm' },
   { id: '1_2in', nombre: '1/2"', abertura: 12.500, desc: '12.5 mm' },
   { id: '3_8in', nombre: '3/8"', abertura: 9.500, desc: '9.5 mm' },
-  { id: '1_4in', nombre: '1/4"', abertura: 6.350, desc: '6.35 mm' },
+  { id: '1_4in', nombre: '1/4"', abertura: 6.300, desc: '6.30 mm' },
   { id: 'n4', nombre: 'N° 4', abertura: 4.750, desc: '4.75 mm' },
   { id: 'n10', nombre: 'N° 10', abertura: 2.000, desc: '2.00 mm' },
   { id: 'n20', nombre: 'N° 20', abertura: 0.850, desc: '850 µm' },
@@ -201,7 +201,8 @@ const ASTM_SIEVES = [
   { id: 'n100', nombre: 'N° 100', abertura: 0.150, desc: '150 µm' },
   { id: 'n140', nombre: 'N° 140', abertura: 0.106, desc: '106 µm' },
   { id: 'n200', nombre: 'N° 200', abertura: 0.075, desc: '75 µm' },
-  { id: 'pan', nombre: 'Platillo / Fondo', abertura: 0.000, desc: 'Fondo' }
+  { id: 'pan', nombre: 'Platillo / Fondo', abertura: 0.000, desc: 'Fondo' },
+  { id: 'mmo', nombre: 'M - Mo (Lavado)', abertura: 0.000, desc: 'Finos perdidos por lavado' }
 ];
 
 // ESTADO GLOBAL DE LA APLICACIÓN
@@ -271,6 +272,37 @@ const GeoState = {
       sucs_simbolo: "",
       sucs_descripcion: "",
       observaciones: ""
+    },
+    atterberg: {
+      calculado: false,
+      np: false,
+      ll: null,
+      lp: null,
+      ip: null,
+      lc: null,
+      ll_pts: [],
+      lp_pts: [],
+      m: null,
+      b: null,
+      r2: null,
+      clase: null,
+      observaciones: ""
+    },
+    proctor: {
+      calculado: false,
+      vol: null,
+      peso_molde: null,
+      gs: null,
+      puntos: [],
+      a: null,
+      b: null,
+      c: null,
+      r2: null,
+      och: null,
+      mds: null,
+      mds95: null,
+      opt_dentro: true,
+      observaciones: ""
     }
   }
 };
@@ -283,11 +315,15 @@ document.addEventListener("DOMContentLoaded", () => {
   initVolumetricoEvents();
   initGravedadEvents();
   initGranulometriaEvents();
+  initAtterbergEvents();
+  initProctorEvents();
   initDashboardEvents();
   initDashboardLab2Events();
   updateStripUI();
   updateDashboardPills();
   updateDashboardLab2Summary();
+  updateDashboardAtterbergSummary();
+  updateDashboardProctorSummary();
 });
 
 // 1. NAVEGACIÓN Y PESTAÑAS (panel principal ⇄ opciones)
@@ -319,6 +355,10 @@ function initNavigation() {
   document.getElementById("btn-goto-gravedad").addEventListener("click", () => switchView("view-gravedad"));
   const btnGotoGranu = document.getElementById("btn-goto-granulometria");
   if (btnGotoGranu) btnGotoGranu.addEventListener("click", () => switchView("view-granulometria"));
+  const btnGotoAtt = document.getElementById("btn-goto-atterberg");
+  if (btnGotoAtt) btnGotoAtt.addEventListener("click", () => switchView("view-atterberg"));
+  const btnGotoPro = document.getElementById("btn-goto-proctor");
+  if (btnGotoPro) btnGotoPro.addEventListener("click", () => switchView("view-proctor"));
 
   // Botones "Volver al Panel" dentro de cada opción
   document.querySelectorAll(".btn-back-dashboard").forEach(btn => {
@@ -1225,6 +1265,17 @@ function initDashboardEvents() {
     });
   }
 
+  const btnSyncAtt = document.getElementById("btn-sync-att");
+  if (btnSyncAtt) btnSyncAtt.addEventListener("click", () => {
+    updateDashboardAtterbergSummary();
+    showToast("Resultados de Atterberg sincronizados.");
+  });
+  const btnSyncPro = document.getElementById("btn-sync-pro");
+  if (btnSyncPro) btnSyncPro.addEventListener("click", () => {
+    updateDashboardProctorSummary();
+    showToast("Resultados de Proctor sincronizados.");
+  });
+
   const btnExportGeneral = document.getElementById("btn-exportar-general");
   if (btnExportGeneral) {
     btnExportGeneral.addEventListener("click", generarPDFGeneral);
@@ -1257,6 +1308,12 @@ function updateDashboardPills() {
   setCardBadge("badge-card-humedad", humedad.calculado);
   setCardBadge("badge-card-vol", volumetrico.calculado);
   setCardBadge("badge-card-gs", gravedad.calculado);
+
+  // Ensayos 04, 05 y 06 (tarjetas con su propio resumen)
+  const { granulometria, atterberg, proctor } = GeoState.ensayos;
+  setBadge("pill-summary-granu", granulometria.calculado, `04. Granulometría: ${granulometria.calculado ? '✅' : '⏳'}`);
+  setBadge("pill-summary-att", atterberg.calculado, `05. Atterberg: ${atterberg.calculado ? '✅' : '⏳'}`);
+  setBadge("pill-summary-pro", proctor.calculado, `06. Proctor: ${proctor.calculado ? '✅' : '⏳'}`);
 
   const setCheck = (elId, status, text) => {
     const el = document.getElementById(elId);
@@ -1395,6 +1452,7 @@ function initDashboardLab2Events() {
 
 function updateDashboardLab2Summary() {
   const g = GeoState.ensayos.granulometria;
+  updateDashboardPills();
 
   const setBadge = (elId, status, text) => {
     const el = document.getElementById(elId);
@@ -1525,16 +1583,19 @@ function updateDashboardLab2Summary() {
     gsumSet("td-gsum-d60", "td-gstatus-d60", g.d60 ? g.d60.toFixed(3) : "—", !!g.d60, "Calculado", "No interpolable");
     gsumSet("td-gsum-cu", "td-gstatus-cu", g.cu ? g.cu.toFixed(2) : "—", !!g.cu, "Calculado", "N/A");
     gsumSet("td-gsum-cc", "td-gstatus-cc", g.cc ? g.cc.toFixed(2) : "—", !!g.cc, "Calculado", "N/A");
-    const usoK = g.factor_k && g.factor_k !== 1;
-    gsumSet("td-gsum-k", "td-gstatus-k", usoK ? g.factor_k.toFixed(4) : "1.0000", usoK, "Con cuarteo", "Sin cuarteo");
+    const usoK = g.metodo === "compuesto";
+    gsumSet("td-gsum-k", "td-gstatus-k", usoK ? g.factor_k.toFixed(4) : "1.0000", usoK, "Homogenizado", "Método simple");
+    gsumSet("td-gsum-arenas", "td-gstatus-arenas", `${g.arena_gruesa.toFixed(1)} / ${g.arena_media.toFixed(1)} / ${g.arena_fina.toFixed(1)}`, true);
+    gsumSet("td-gsum-aashto", "td-gstatus-aashto", g.aashto, true, "Clasificado");
+    gsumSet("td-gsum-error", "td-gstatus-error", `${g.porc_error.toFixed(2)}`, g.porc_error <= 1.0, "Conforme (≤ 1%)", "Revisar (> 1%)");
   } else {
-    ["sucs", "grava", "arena", "finos", "d10", "d30", "d60", "cu", "cc", "k"].forEach(s => {
+    ["sucs", "grava", "arena", "finos", "d10", "d30", "d60", "cu", "cc", "k", "arenas", "aashto", "error"].forEach(s => {
       setEl(`td-gsum-${s}`, "—");
     });
-    ["sucs", "grava", "arena", "finos", "d10", "d30", "d60", "cu", "cc"].forEach(s => {
+    ["sucs", "grava", "arena", "finos", "d10", "d30", "d60", "cu", "cc", "arenas", "aashto", "error"].forEach(s => {
       setHtml(`td-gstatus-${s}`, '<span class="badge badge-pending">Sin procesar</span>');
     });
-    setHtml("td-gstatus-k", '<span class="badge badge-pending">Sin cuarteo</span>');
+    setHtml("td-gstatus-k", '<span class="badge badge-pending">Sin procesar</span>');
   }
 }
 
@@ -1542,6 +1603,20 @@ function updateDashboardLab2Summary() {
 // 9. LÓGICA DE ENSAYO 04: ANÁLISIS GRANULOMÉTRICO (ASTM D6913 / NTP 339.128)
 // ===================================================================
 let granuChartInstance = null;
+
+// ¿El método elegido es Tamizado Compuesto (Parte Gruesa + Parte Fina)?
+function granuEsCompuesto() {
+  const el = document.querySelector('input[name="granu-metodo"]:checked');
+  return !el || el.value === "a-compuesto";
+}
+
+// Lee un campo numérico (null si está vacío / inválido)
+function granuNum(id) {
+  const el = document.getElementById(id);
+  if (!el || el.value === "") return null;
+  const v = parseFloat(el.value);
+  return isNaN(v) ? null : v;
+}
 
 function initGranulometriaEvents() {
   renderGranulometriaTable();
@@ -1561,18 +1636,10 @@ function initGranulometriaEvents() {
   if (w1Input) w1Input.addEventListener("input", updatePerdidaLive);
   if (w0Input) w0Input.addEventListener("input", updatePerdidaLive);
 
-  // Factor de cuarteo k = peso total / peso porción (en vivo)
-  const ctTotal = document.getElementById("granu-cuarteo-total");
-  const ctPorcion = document.getElementById("granu-cuarteo-porcion");
-  const updateFactorK = () => {
-    const t = parseFloat(ctTotal ? ctTotal.value : 0) || 0;
-    const p = parseFloat(ctPorcion ? ctPorcion.value : 0) || 0;
-    const k = (t > 0 && p > 0) ? t / p : 1.0;
-    const el = document.getElementById("granu-factor-k");
-    if (el) el.textContent = `k = ${k.toFixed(4)}`;
-  };
-  if (ctTotal) ctTotal.addEventListener("input", updateFactorK);
-  if (ctPorcion) ctPorcion.addEventListener("input", updateFactorK);
+  // Método: en Compuesto los pesos salen del Control de Secado y K es automático
+  document.querySelectorAll('input[name="granu-metodo"]').forEach(r =>
+    r.addEventListener("change", aplicarMetodoGranu));
+  aplicarMetodoGranu();
 
   document.getElementById("btn-calcular-granu").addEventListener("click", calcularGranulometria);
   document.getElementById("btn-limpiar-granu").addEventListener("click", limpiarGranulometria);
@@ -1588,22 +1655,36 @@ function initGranulometriaEvents() {
   });
 }
 
+function aplicarMetodoGranu() {
+  const comp = granuEsCompuesto();
+  const cardSimple = document.getElementById("card-granu-simple-masas");
+  const cardComp = document.getElementById("card-granu-compuesto-info");
+  if (cardSimple) cardSimple.classList.toggle("hidden", comp);
+  if (cardComp) cardComp.classList.toggle("hidden", !comp);
+}
+
 function renderGranulometriaTable() {
   const tbody = document.getElementById("tbody-granu-inputs");
   if (!tbody) return;
 
+  const claseTipo = id => (id === 'n4' ? 'granu-row-n4' : (id === 'n200' ? 'granu-row-n200' : (id === 'mmo' ? 'granu-row-mmo' : '')));
+  const etiqueta = id => (id === 'n4' ? ' <span class="granu-tag granu-tag-blue">Grava/Arena</span>'
+    : (id === 'n200' ? ' <span class="granu-tag granu-tag-violet">Arena/Finos</span>'
+      : (id === 'mmo' ? ' <span class="granu-tag granu-tag-orange">Auto-calculado</span>' : '')));
+
   let html = "";
   ASTM_SIEVES.forEach((s, idx) => {
+    const auto = s.id === 'mmo';
     html += `
-      <tr>
+      <tr class="${claseTipo(s.id)}">
         <td class="text-center font-bold text-accent">${idx + 1}</td>
-        <td><strong>${s.nombre}</strong> <span style="font-size:0.75rem; color:var(--neutral-muted);">(${s.desc})</span></td>
+        <td><strong>${s.nombre}</strong> <span style="font-size:0.75rem; color:var(--neutral-muted);">(${s.desc})</span>${etiqueta(s.id)}</td>
         <td class="font-mono text-center">${s.abertura > 0 ? s.abertura.toFixed(3) : '—'}</td>
         <td>
-          <input type="number" step="0.01" class="input-control font-mono" id="granu-ret-${s.id}" placeholder="0.00" value="0.00">
+          <input type="number" step="0.01" class="input-control font-mono" id="granu-ret-${s.id}" placeholder="0.00" ${auto ? 'readonly tabindex="-1"' : ''}>
         </td>
         <td>
-          <input type="number" step="0.01" class="input-control font-mono" id="granu-ret2-${s.id}" placeholder="0.00" value="0.00">
+          <input type="number" step="0.01" class="input-control font-mono" id="granu-ret2-${s.id}" placeholder="0.00" ${auto ? 'readonly tabindex="-1"' : ''}>
         </td>
         <td class="font-mono text-center" id="granu-pp-${s.id}">—</td>
         <td class="font-mono text-center" id="granu-pa-${s.id}">—</td>
@@ -1614,200 +1695,263 @@ function renderGranulometriaTable() {
   tbody.innerHTML = html;
 }
 
+// -------------------------------------------------------------------
+// SUCS preliminar (ASTM D2487) a partir de granulometría
+// -------------------------------------------------------------------
+function sucsPreliminarGranu(finos, grava, arena, cu, cc) {
+  const bien = lim => cu && cc && cu >= lim && cc >= 1.0 && cc <= 3.0;
+  if (finos >= 50.0) return { simbolo: "FINO", desc: "Suelo fino (Limo / Arcilla)" };
+  if (grava > arena) {
+    if (finos < 5.0) return bien(4.0)
+      ? { simbolo: "GW", desc: "Grava bien graduada" }
+      : { simbolo: "GP", desc: "Grava pobremente graduada" };
+    if (finos <= 12.0) return bien(4.0)
+      ? { simbolo: "GW-GM / GW-GC", desc: "Grava bien graduada con finos" }
+      : { simbolo: "GP-GM / GP-GC", desc: "Grava pobremente graduada con finos" };
+    return { simbolo: "GM / GC", desc: "Grava con finos limosos o arcillosos" };
+  }
+  if (finos < 5.0) return bien(6.0)
+    ? { simbolo: "SW", desc: "Arena bien graduada" }
+    : { simbolo: "SP", desc: "Arena pobremente graduada" };
+  if (finos <= 12.0) return bien(6.0)
+    ? { simbolo: "SW-SM / SW-SC", desc: "Arena bien graduada con finos" }
+    : { simbolo: "SP-SM / SP-SC", desc: "Arena pobremente graduada con finos" };
+  return { simbolo: "SM / SC", desc: "Arena con finos limosos o arcillosos" };
+}
+
+// -------------------------------------------------------------------
+// Clasificación AASHTO (M 145) con Índice de Grupo
+//   p10, p40, p200 = % que pasa; ll, ip = límites (0 si NP)
+// -------------------------------------------------------------------
+function clasificarAASHTO(p10, p40, p200, ll, ip) {
+  const np = !(ll > 0) && !(ip > 0);
+  let grupo = "";
+  let parcial = false; // A-2-6 / A-2-7 usan solo el término parcial del IG
+  if (p200 <= 35) {
+    if (p10 <= 50 && p40 <= 30 && p200 <= 15 && ip <= 6) grupo = "A-1-a";
+    else if (p40 <= 50 && p200 <= 25 && ip <= 6) grupo = "A-1-b";
+    else if (p40 >= 51 && p200 <= 10 && np) grupo = "A-3";
+    else if (ll <= 40 && ip <= 10) grupo = "A-2-4";
+    else if (ll > 40 && ip <= 10) grupo = "A-2-5";
+    else if (ll <= 40 && ip > 10) { grupo = "A-2-6"; parcial = true; }
+    else { grupo = "A-2-7"; parcial = true; }
+  } else {
+    if (ll <= 40 && ip <= 10) grupo = "A-4";
+    else if (ll > 40 && ip <= 10) grupo = "A-5";
+    else if (ll <= 40 && ip > 10) grupo = "A-6";
+    else grupo = (ip <= ll - 30) ? "A-7-5" : "A-7-6";
+  }
+  let ig = 0;
+  if (grupo.startsWith("A-4") || grupo.startsWith("A-5") || grupo.startsWith("A-6") || grupo.startsWith("A-7") || parcial) {
+    const termino2 = 0.01 * (p200 - 15) * (ip - 10);
+    ig = parcial ? termino2 : ((p200 - 35) * (0.2 + 0.005 * (ll - 40)) + termino2);
+    ig = Math.max(0, Math.round(ig));
+  }
+  return { grupo, ig, texto: `${grupo}(${ig})` };
+}
+
+// Límites de Atterberg vigentes para clasificar (NP si no se ensayó)
+function limitesParaClasificar() {
+  const a = GeoState.ensayos.atterberg;
+  if (a && a.calculado && !a.np && a.ll !== null && a.ip !== null) {
+    return { ll: a.ll, ip: Math.max(0, a.ip), origen: "Atterberg" };
+  }
+  if (a && a.calculado && a.np) return { ll: 0, ip: 0, origen: "Atterberg (NP)" };
+  return { ll: 0, ip: 0, origen: "asumido NP" };
+}
+
+// -------------------------------------------------------------------
+// CÁLCULO DE GRANULOMETRÍA
+// -------------------------------------------------------------------
 function calcularGranulometria() {
   try {
-    const w1Val = document.getElementById("granu-masa-total").value.trim();
-    const w0Val = document.getElementById("granu-masa-lavada").value.trim();
+    const compuesto = granuEsCompuesto();
     const obs = document.getElementById("granu-obs").value.trim();
 
-    if (!w1Val) throw new Error("Ingrese la Masa Seca Inicial de la muestra (W1).");
-    if (!w0Val) throw new Error("Ingrese la Masa Seca Lavada por tamiz N°200 (W0).");
+    let m_total_sec = 0;       // masa seca total de la muestra
+    let factor_k = 1.0;        // factor de homogenización K
+    let perdida_lavado = 0;    // pérdida por lavado total (g, escala de la muestra completa)
+    let porc_error = 0;
+    let masa_lavada = 0;
+    let items = [];
+    let datosComp = null;
 
-    const w1 = parseFloat(w1Val);
-    const w0 = parseFloat(w0Val);
+    if (compuesto) {
+      // ---------- TAMIZADO COMPUESTO (Parte Gruesa + Parte Fina) ----------
+      const mCgSec = granuNum("sec-g3-masa") || granuNum("sec-g2-masa");
+      if (!mCgSec || mCgSec <= 0) throw new Error("Ingrese la Masa Seca de la Parte Gruesa en 'Control de Secado' (> 0).");
+      const mCgLav = granuNum("sec-g4-masa") || mCgSec;
 
-    if (isNaN(w1) || w1 <= 0) throw new Error("La masa seca inicial (W1) debe ser un número mayor a cero.");
-    if (isNaN(w0) || w0 <= 0) throw new Error("La masa seca lavada (W0) debe ser un número mayor a cero.");
-    if (w0 > w1) throw new Error(`La masa seca lavada (W0 = ${w0}g) no puede ser mayor a la masa seca inicial (W1 = ${w1}g).`);
+      const mFgSubSec = granuNum("sec-f3-masa") || granuNum("sec-f2-masa");
+      if (!mFgSubSec || mFgSubSec <= 0) throw new Error("Ingrese la Masa Seca de la Submuestra Fina (Mo) en 'Control de Secado' (> 0).");
+      const mFgSubLav = granuNum("sec-f4-masa") || mFgSubSec;
 
-    const perdida_lavado = w1 - w0;
-    const porc_perdida_lavado = (perdida_lavado / w1) * 100.0;
+      // Humedad: la del encabezado o, si falta, la de la submuestra fina
+      let humedad = granuNum("granu-hdr-humedad");
+      const f1 = granuNum("sec-f1-masa");
+      if (humedad === null && f1) humedad = ((f1 - mFgSubSec) / mFgSubSec) * 100;
+      if (humedad === null) humedad = 0;
 
-    // Factor de cuarteo (k = peso total / peso porción cuarteada; 1 si no se cuartea)
-    const ctTotalVal = parseFloat((document.getElementById("granu-cuarteo-total") || {}).value) || 0;
-    const ctPorcionVal = parseFloat((document.getElementById("granu-cuarteo-porcion") || {}).value) || 0;
-    const factor_k = (ctTotalVal > 0 && ctPorcionVal > 0) ? (ctTotalVal / ctPorcionVal) : 1.0;
+      const mFgHum = granuNum("granu-hdr-masa-fina") || 0;
+      const mFgSecTotal = mFgHum > 0 ? mFgHum / (1 + humedad / 100) : mFgSubSec;
+      m_total_sec = mCgSec + mFgSecTotal;
 
-    let suma_retenido = 0;
-    const items = [];
+      const perdCg = Math.max(0, mCgSec - mCgLav);
+      const perdFg = Math.max(0, mFgSubSec - mFgSubLav);
 
-    ASTM_SIEVES.forEach(s => {
-      const in1 = document.getElementById(`granu-ret-${s.id}`);
-      const in2 = document.getElementById(`granu-ret2-${s.id}`);
-      let m1 = in1 ? parseFloat(in1.value) : 0;
-      m1 = isNaN(m1) || m1 < 0 ? 0 : m1;
-      let m2 = in2 ? parseFloat(in2.value) : 0;
-      m2 = isNaN(m2) || m2 < 0 ? 0 : m2;
-      const ret = m1 + m2 * factor_k; // retenido efectivo escalado a la muestra completa
-      suma_retenido += ret;
-      items.push({
-        id: s.id,
-        nombre: s.nombre,
-        abertura: s.abertura,
-        desc: s.desc,
-        m1,
-        m2,
-        retenido: ret
+      // 1er paso: valores crudos de cada tamiz
+      const crudos = ASTM_SIEVES.map(s => {
+        let v1 = granuNum(`granu-ret-${s.id}`) || 0;
+        let v2 = granuNum(`granu-ret2-${s.id}`) || 0;
+        if (s.id === 'mmo') { v1 = perdCg; v2 = perdFg; }
+        if (v1 < 0 || v2 < 0) throw new Error(`Las masas retenidas en ${s.nombre} no pueden ser negativas.`);
+        return { s, v1, v2 };
       });
-    });
 
-    if (suma_retenido <= 0) {
-      throw new Error("Ingrese los valores de masa retenida en los tamices.");
+      // Platillo grueso = M1 de los tamices que además tienen M2 (frontera gruesa/fina): va al numerador de K
+      const platilloM1 = crudos.reduce((a, c) => a + ((c.s.id !== 'mmo' && c.v2 > 0 && c.v1 > 0) ? c.v1 : 0), 0);
+      factor_k = (mFgSecTotal + platilloM1 + perdCg) / mFgSubSec;
+
+      // 2do paso: masa homogenizada y porcentajes
+      let acum = 0, sumaM1 = 0, sumaM2 = 0, sumaEq = 0;
+      crudos.forEach(({ s, v1, v2 }) => {
+        if (s.id !== 'mmo') { sumaM1 += v1; sumaM2 += v2; }
+        const mEq = (v2 > 0 || s.id === 'mmo') ? v2 * factor_k : v1 + v2 * factor_k;
+        sumaEq += mEq;
+        const parcial = m_total_sec > 0 ? (mEq / m_total_sec) * 100 : 0;
+        acum += parcial;
+        items.push({
+          id: s.id, nombre: s.nombre, abertura: s.abertura, desc: s.desc,
+          m1: v1, m2: v2, retenido: mEq, corregido: mEq,
+          porc_parcial: parcial, porc_acumulado: acum, porc_pasa: Math.max(0, 100 - acum)
+        });
+      });
+
+      const errCg = Math.abs(mCgSec - (sumaM1 + perdCg)) / mCgSec * 100;
+      const errFg = Math.abs(mFgSubSec - (sumaM2 + perdFg)) / mFgSubSec * 100;
+      porc_error = Math.max(errCg, errFg);
+      perdida_lavado = perdCg + perdFg * factor_k;
+      masa_lavada = m_total_sec - perdida_lavado;
+      datosComp = {
+        humedad, masa_seca_gruesa: mCgSec, masa_seca_fina_total: mFgSecTotal, masa_seca_submuestra: mFgSubSec,
+        platillo_m1: platilloM1, perdida_gruesa: perdCg, perdida_fina: perdFg, err_gruesa: errCg, err_fina: errFg,
+        suma_eq: sumaEq
+      };
+    } else {
+      // ---------- TAMIZADO SIMPLE (muestra única) ----------
+      const w1Val = document.getElementById("granu-masa-total").value.trim();
+      const w0Val = document.getElementById("granu-masa-lavada").value.trim();
+      if (!w1Val) throw new Error("Ingrese la Masa Seca Inicial de la muestra (W1).");
+      if (!w0Val) throw new Error("Ingrese la Masa Seca Lavada por tamiz N°200 (W0).");
+      const w1 = parseFloat(w1Val);
+      const w0 = parseFloat(w0Val);
+      if (isNaN(w1) || w1 <= 0) throw new Error("La masa seca inicial (W1) debe ser un número mayor a cero.");
+      if (isNaN(w0) || w0 <= 0) throw new Error("La masa seca lavada (W0) debe ser un número mayor a cero.");
+      if (w0 > w1) throw new Error(`La masa seca lavada (W0 = ${w0}g) no puede ser mayor a la masa seca inicial (W1 = ${w1}g).`);
+
+      m_total_sec = w1;
+      masa_lavada = w0;
+      perdida_lavado = w1 - w0;
+
+      let suma = 0;
+      const crudos = ASTM_SIEVES.map(s => {
+        const m1 = Math.max(0, granuNum(`granu-ret-${s.id}`) || 0);
+        const m2 = Math.max(0, granuNum(`granu-ret2-${s.id}`) || 0);
+        const ret = s.id === 'mmo' ? 0 : m1 + m2;
+        suma += ret;
+        return { s, m1: s.id === 'mmo' ? 0 : m1, m2: s.id === 'mmo' ? 0 : m2, ret };
+      });
+      if (suma <= 0) throw new Error("Ingrese los valores de masa retenida en los tamices.");
+
+      const error_g = w0 - suma;
+      porc_error = (Math.abs(error_g) / w0) * 100.0;
+      let maxIdx = -1, maxVal = -1;
+      crudos.forEach((c, i) => { if (c.s.abertura > 0 && c.ret > maxVal) { maxVal = c.ret; maxIdx = i; } });
+
+      let acum = 0;
+      crudos.forEach((c, i) => {
+        let corr = c.ret;
+        if (porc_error <= 1.0 && i === maxIdx) corr += error_g;
+        const parcial = (corr / w1) * 100.0;
+        acum += parcial;
+        items.push({
+          id: c.s.id, nombre: c.s.nombre, abertura: c.s.abertura, desc: c.s.desc,
+          m1: c.m1, m2: c.m2, retenido: c.ret, corregido: corr,
+          porc_parcial: parcial, porc_acumulado: acum, porc_pasa: Math.max(0, 100 - acum)
+        });
+      });
     }
 
-    const error_gramos = w0 - suma_retenido;
-    const porc_error = (Math.abs(error_gramos) / w0) * 100.0;
+    const suma_retenido = items.reduce((a, t) => a + t.corregido, 0);
+    const error_gramos = m_total_sec - suma_retenido;
+    const porc_perdida_lavado = m_total_sec > 0 ? (perdida_lavado / m_total_sec) * 100.0 : 0;
 
-    let maxRetIdx = -1;
-    let maxRetVal = -1;
-    items.forEach((item, idx) => {
-      if (item.abertura > 0 && item.retenido > maxRetVal) {
-        maxRetVal = item.retenido;
-        maxRetIdx = idx;
-      }
-    });
+    // ---------- Fracciones (ASTM D2487) ----------
+    const pasa = id => { const t = items.find(x => x.id === id); return t ? t.porc_pasa : 0; };
+    const pasa4 = pasa('n4'), pasa10 = pasa('n10'), pasa40 = pasa('n40'), pasa200 = pasa('n200');
+    const grava = Math.max(0, 100.0 - pasa4);
+    const arena = Math.max(0, pasa4 - pasa200);
+    const arena_gruesa = Math.max(0, pasa4 - pasa10);
+    const arena_media = Math.max(0, pasa10 - pasa40);
+    const arena_fina = Math.max(0, pasa40 - pasa200);
+    const finos = Math.max(0, pasa200);
 
-    let acumulado_retenido = 0;
-    const tamicesResultado = items.map((item, idx) => {
-      let corregido = item.retenido;
-      if (porc_error <= 1.0 && idx === maxRetIdx) {
-        corregido += error_gramos;
-      }
-      const porc_parcial = (corregido / w1) * 100.0;
-      acumulado_retenido += porc_parcial;
-      let porc_pasa = 100.0 - acumulado_retenido;
-      if (porc_pasa < 0) porc_pasa = 0;
-
-      return {
-        ...item,
-        corregido,
-        porc_parcial,
-        porc_acumulado: acumulado_retenido,
-        porc_pasa
-      };
-    });
-
-    const itemN4 = tamicesResultado.find(t => t.id === 'n4') || { porc_pasa: 40 };
-    const itemN200 = tamicesResultado.find(t => t.id === 'n200') || { porc_pasa: 10 };
-
-    const grava = 100.0 - itemN4.porc_pasa;
-    const finos = itemN200.porc_pasa;
-    const arena = Math.max(0, 100.0 - grava - finos);
-
-    const puntosCurva = tamicesResultado.filter(t => t.abertura > 0);
-    puntosCurva.sort((a, b) => b.abertura - a.abertura);
-
+    // ---------- D10, D30, D60, D85 por interpolación logarítmica ----------
+    const puntosCurva = items.filter(t => t.abertura > 0).sort((a, b) => b.abertura - a.abertura);
     function findDiameter(pctTarget) {
       for (let i = 0; i < puntosCurva.length - 1; i++) {
-        const p1 = puntosCurva[i];
-        const p2 = puntosCurva[i + 1];
+        const p1 = puntosCurva[i], p2 = puntosCurva[i + 1];
         if ((p1.porc_pasa >= pctTarget && p2.porc_pasa <= pctTarget) ||
           (p1.porc_pasa <= pctTarget && p2.porc_pasa >= pctTarget)) {
           if (p1.porc_pasa === p2.porc_pasa) return p1.abertura;
           if (p1.abertura <= 0 || p2.abertura <= 0) return null;
-          const logD1 = Math.log10(p1.abertura);
-          const logD2 = Math.log10(p2.abertura);
-          const logDx = logD1 + ((pctTarget - p1.porc_pasa) / (p2.porc_pasa - p1.porc_pasa)) * (logD2 - logD1);
-          return Math.pow(10, logDx);
+          const l1 = Math.log10(p1.abertura), l2 = Math.log10(p2.abertura);
+          return Math.pow(10, l1 + ((pctTarget - p1.porc_pasa) / (p2.porc_pasa - p1.porc_pasa)) * (l2 - l1));
         }
       }
       return null;
     }
-
-    const d10 = findDiameter(10.0);
+    const d10 = finos <= 10.0 ? findDiameter(10.0) : null;
     const d30 = findDiameter(30.0);
     const d60 = findDiameter(60.0);
     const d85 = findDiameter(85.0);
+    const cu = (d60 && d10 && d10 > 0) ? (d60 / d10) : null;
+    const cc = (d30 && d10 && d60 && d10 > 0 && d60 > 0) ? (Math.pow(d30, 2) / (d10 * d60)) : null;
 
-    let cu = (d60 && d10 && d10 > 0) ? (d60 / d10) : null;
-    let cc = (d30 && d10 && d60 && d10 > 0 && d60 > 0) ? (Math.pow(d30, 2) / (d10 * d60)) : null;
-
-    let sucs_simbolo = "—";
-    let sucs_desc = "Suelo granular";
-
-    if (finos >= 50.0) {
-      sucs_simbolo = "FINO";
-      sucs_desc = "Suelo de grano fino (Limo / Arcilla)";
-    } else {
-      const predominaGrava = grava > arena;
-      if (predominaGrava) {
-        if (finos < 5.0) {
-          if (cu && cu >= 4.0 && cc && cc >= 1.0 && cc <= 3.0) {
-            sucs_simbolo = "GW";
-            sucs_desc = "Grava bien graduada con arena";
-          } else {
-            sucs_simbolo = "GP";
-            sucs_desc = "Grava pobremente graduada con arena";
-          }
-        } else if (finos > 12.0) {
-          sucs_simbolo = "GM";
-          sucs_desc = "Grava limosa con arena";
-        } else {
-          sucs_simbolo = (cu && cu >= 4.0 && cc && cc >= 1.0 && cc <= 3.0) ? "GW-GM" : "GP-GM";
-          sucs_desc = "Grava con finos limosos (doble símbolo)";
-        }
-      } else {
-        if (finos < 5.0) {
-          if (cu && cu >= 6.0 && cc && cc >= 1.0 && cc <= 3.0) {
-            sucs_simbolo = "SW";
-            sucs_desc = "Arena bien graduada con gravas";
-          } else {
-            sucs_simbolo = "SP";
-            sucs_desc = "Arena pobremente graduada con gravas";
-          }
-        } else if (finos > 12.0) {
-          sucs_simbolo = "SM";
-          sucs_desc = "Arena limosa con gravas";
-        } else {
-          sucs_simbolo = (cu && cu >= 6.0 && cc && cc >= 1.0 && cc <= 3.0) ? "SW-SM" : "SP-SM";
-          sucs_desc = "Arena bien graduada con limo y gravas";
-        }
-      }
-    }
+    const sucs = sucsPreliminarGranu(finos, grava, arena, cu, cc);
+    const lim = limitesParaClasificar();
+    const aashto = clasificarAASHTO(pasa10, pasa40, pasa200, lim.ll, lim.ip);
 
     GeoState.ensayos.granulometria = {
       calculado: true,
-      metodo: "simple",
-      masa_total: w1,
-      masa_lavada: w0,
+      metodo: compuesto ? "compuesto" : "simple",
+      masa_total: m_total_sec,
+      masa_lavada,
       perdida_lavado,
       porc_perdida_lavado,
-      tamices: tamicesResultado,
+      tamices: items,
       suma_retenido,
       error_gramos,
       porc_error,
-      grava,
-      arena,
-      finos,
-      d10,
-      d30,
-      d60,
-      d85,
-      cu,
-      cc,
-      sucs_simbolo,
-      sucs_descripcion: sucs_desc,
+      grava, arena, arena_gruesa, arena_media, arena_fina, finos,
+      pasa10, pasa40, pasa200,
+      d10, d30, d60, d85, cu, cc,
+      sucs_simbolo: sucs.simbolo,
+      sucs_descripcion: sucs.desc,
+      aashto: aashto.texto,
+      aashto_grupo: aashto.grupo,
+      aashto_ig: aashto.ig,
+      aashto_origen: lim.origen,
       observaciones: obs,
       factor_k,
-      cuarteo_total: ctTotalVal,
-      cuarteo_porcion: ctPorcionVal,
+      comp: datosComp,
       encabezado: capturarEncabezadoGranu()
     };
 
     sincronizarEncabezadoGranuAProyecto(GeoState.ensayos.granulometria.encabezado);
     renderResultadosGranulometria();
     updateDashboardLab2Summary();
-    showToast(`Granulometría calculada: ${sucs_simbolo} (${sucs_desc})`);
+    showToast(`Granulometría calculada: ${sucs.simbolo} (${sucs.desc})`);
 
   } catch (err) {
     alert("Error en datos de Granulometría:\n" + err.message);
@@ -1824,11 +1968,11 @@ function renderResultadosGranulometria() {
   document.getElementById("granu-res-sucs-symbol").textContent = g.sucs_simbolo;
   document.getElementById("granu-res-sucs-desc").textContent = g.sucs_descripcion;
 
-  document.getElementById("granu-res-grava").textContent = `${g.grava.toFixed(1)} %`;
-  document.getElementById("granu-res-arena").textContent = `${g.arena.toFixed(1)} %`;
-  document.getElementById("granu-res-finos").textContent = `${g.finos.toFixed(1)} %`;
+  document.getElementById("granu-res-grava").textContent = `${g.grava.toFixed(2)} %`;
+  document.getElementById("granu-res-arena").textContent = `${g.arena.toFixed(2)} %`;
+  document.getElementById("granu-res-finos").textContent = `${g.finos.toFixed(2)} %`;
 
-  const d10Str = g.d10 ? `D10: ${g.d10.toFixed(3)} mm` : 'D10: —';
+  const d10Str = g.d10 ? `D10: ${g.d10.toFixed(3)} mm` : (g.finos > 10 ? 'D10: < 0.075' : 'D10: —');
   const d30Str = g.d30 ? `D30: ${g.d30.toFixed(3)} mm` : 'D30: —';
   const d60Str = g.d60 ? `D60: ${g.d60.toFixed(3)} mm` : 'D60: —';
   const d85Str = g.d85 ? `D85: ${g.d85.toFixed(3)} mm` : 'D85: —';
@@ -1850,10 +1994,21 @@ function renderResultadosGranulometria() {
   }
   document.getElementById("granu-res-gradacion-eval").textContent = evalGrad;
 
-  const errStatus = g.porc_error <= 1.0 ? '✅ Conforme (&le; 1.0%)' : '⚠️ No conforme (&gt; 1.0%)';
-  const kInfo = (g.factor_k && g.factor_k !== 1) ? ` • Factor de cuarteo k = ${g.factor_k.toFixed(4)}` : "";
+  // Sub-fracciones de arena, factor K y AASHTO
+  const setT = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  setT("granu-res-arenas", `Gruesa ${g.arena_gruesa.toFixed(1)} • Media ${g.arena_media.toFixed(1)} • Fina ${g.arena_fina.toFixed(1)} %`);
+  setT("granu-res-k", g.metodo === "compuesto" ? `K = ${g.factor_k.toFixed(4)}` : "K = 1.0000");
+  setT("granu-res-k-sub", g.metodo === "compuesto" ? `Masa seca total: ${g.masa_total.toFixed(1)} g` : "Método simple (sin homogenización)");
+  setT("granu-res-aashto", g.aashto);
+  setT("granu-res-aashto-sub", `Límites: ${g.aashto_origen}`);
+
+  const errOk = g.porc_error <= 1.0;
+  const errStatus = errOk ? '✅ Conforme (≤ 1.0%)' : '⚠️ No conforme (> 1.0%)';
+  const detalle = g.comp
+    ? ` (gruesa ${g.comp.err_gruesa.toFixed(2)} % • fina ${g.comp.err_fina.toFixed(2)} %)`
+    : ` (${g.error_gramos.toFixed(2)} g)`;
   document.getElementById("granu-res-error-text").textContent =
-    `ΔError = ${g.porc_error.toFixed(2)} % (${g.error_gramos.toFixed(2)} g) • Retenido sumado: ${g.suma_retenido.toFixed(2)} g${kInfo} • Tolerancia ASTM D6913: ${errStatus}`;
+    `ΔError = ${g.porc_error.toFixed(2)} %${detalle} • Σ masa homogenizada: ${g.suma_retenido.toFixed(2)} g • Tolerancia ASTM D6913: ${errStatus}`;
 
   const tbody = document.getElementById("tbody-granu-breakdown");
   tbody.innerHTML = "";
@@ -1862,7 +2017,8 @@ function renderResultadosGranulometria() {
     tr.innerHTML = `
       <td><strong>${t.nombre}</strong></td>
       <td class="font-mono text-center">${t.abertura > 0 ? t.abertura.toFixed(3) : '—'}</td>
-      <td class="font-mono text-right">${t.retenido.toFixed(2)}</td>
+      <td class="font-mono text-right">${t.m1 > 0 ? t.m1.toFixed(2) : '—'}</td>
+      <td class="font-mono text-right">${t.m2 > 0 ? t.m2.toFixed(2) : '—'}</td>
       <td class="font-mono text-right font-bold">${t.corregido.toFixed(2)}</td>
       <td class="font-mono text-right">${t.porc_parcial.toFixed(2)} %</td>
       <td class="font-mono text-right">${t.porc_acumulado.toFixed(2)} %</td>
@@ -1877,6 +2033,14 @@ function renderResultadosGranulometria() {
     if (paEl) paEl.textContent = `${t.porc_acumulado.toFixed(2)}`;
     const pasaEl = document.getElementById(`granu-pasa-${t.id}`);
     if (pasaEl) pasaEl.textContent = `${t.porc_pasa.toFixed(2)}`;
+
+    // M - Mo se autocalcula en compuesto: mostrarlo en las celdas de entrada
+    if (t.id === 'mmo') {
+      const a = document.getElementById("granu-ret-mmo");
+      const b = document.getElementById("granu-ret2-mmo");
+      if (a) a.value = g.metodo === "compuesto" ? t.m1.toFixed(2) : "";
+      if (b) b.value = g.metodo === "compuesto" ? t.m2.toFixed(2) : "";
+    }
   });
 
   renderGraficoGranulometria(g.tamices);
@@ -1981,19 +2145,13 @@ function limpiarGranulometria() {
   });
   const metDefault = document.querySelector('input[name="granu-metodo"][value="a-compuesto"]');
   if (metDefault) metDefault.checked = true;
-
-  const ctTotal = document.getElementById("granu-cuarteo-total");
-  if (ctTotal) ctTotal.value = "";
-  const ctPorcion = document.getElementById("granu-cuarteo-porcion");
-  if (ctPorcion) ctPorcion.value = "";
-  const kEl = document.getElementById("granu-factor-k");
-  if (kEl) kEl.textContent = "k = 1.0000";
+  aplicarMetodoGranu();
 
   ASTM_SIEVES.forEach(s => {
     const input = document.getElementById(`granu-ret-${s.id}`);
-    if (input) input.value = "0.00";
+    if (input) input.value = "";
     const input2 = document.getElementById(`granu-ret2-${s.id}`);
-    if (input2) input2.value = "0.00";
+    if (input2) input2.value = "";
     ["granu-pp-", "granu-pa-", "granu-pasa-"].forEach(pfx => {
       const c = document.getElementById(pfx + s.id);
       if (c) c.textContent = "—";
@@ -2017,6 +2175,10 @@ function limpiarGranulometria() {
 }
 
 function cargarDemoGranuSimple() {
+  const radio = document.querySelector('input[name="granu-metodo"][value="a-simple"]');
+  if (radio) radio.checked = true;
+  aplicarMetodoGranu();
+
   document.getElementById("granu-masa-total").value = "2900.00";
   document.getElementById("granu-masa-lavada").value = "2708.00";
 
@@ -2041,21 +2203,11 @@ function cargarDemoGranuSimple() {
     'pan': '6.60'
   };
 
-  // Tamizado simple: solo columna M-1, sin cuarteo (k = 1)
-  const ctTotal = document.getElementById("granu-cuarteo-total");
-  if (ctTotal) ctTotal.value = "";
-  const ctPorcion = document.getElementById("granu-cuarteo-porcion");
-  if (ctPorcion) ctPorcion.value = "";
-  const kEl = document.getElementById("granu-factor-k");
-  if (kEl) kEl.textContent = "k = 1.0000";
-
   ASTM_SIEVES.forEach(s => {
     const input = document.getElementById(`granu-ret-${s.id}`);
-    if (input) {
-      input.value = demoRetenidos[s.id] || '0.00';
-    }
+    if (input) input.value = s.id === 'mmo' ? "" : (demoRetenidos[s.id] || '0.00');
     const input2 = document.getElementById(`granu-ret2-${s.id}`);
-    if (input2) input2.value = "0.00";
+    if (input2) input2.value = "";
   });
 
   const perdidaEl = document.getElementById("granu-live-perdida");
@@ -2065,45 +2217,658 @@ function cargarDemoGranuSimple() {
   calcularGranulometria();
 }
 
+// Datos EXACTOS del formato UNI FIC AT-PR.4-F1 (Calicata C-1, Muestra M-1)
 function cargarDemoGranuCompuesto() {
-  // Ejemplo de CUARTEO auto-consistente:
-  //  - Gruesos (M-1): pesados completos.          Σ = 2550 g
-  //  - Finos que pasan N°4: 2400 g totales, cuarteados a una porción de 600 g  →  k = 4
-  //  - Finos (M-2): pesados en la porción de 600 g. Σ(M-2)·k = 600·4 = 2400 g
-  //  - Retenido efectivo total = 2550 + 2400 = 4950 g = W0  (balance exacto)
-  document.getElementById("granu-masa-total").value = "5000.00";
-  document.getElementById("granu-masa-lavada").value = "4950.00";
+  const radio = document.querySelector('input[name="granu-metodo"][value="a-compuesto"]');
+  if (radio) radio.checked = true;
+  aplicarMetodoGranu();
 
-  const ctTotal = document.getElementById("granu-cuarteo-total");
-  if (ctTotal) ctTotal.value = "2400.00";
-  const ctPorcion = document.getElementById("granu-cuarteo-porcion");
-  if (ctPorcion) ctPorcion.value = "600.00";
-  const kEl = document.getElementById("granu-factor-k");
-  if (kEl) kEl.textContent = "k = 4.0000";
+  const setV = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+  setV("granu-hdr-calicata", "C-1");
+  setV("granu-hdr-muestra", "M-1");
+  setV("granu-hdr-profundidad", "15.60");
+  setV("granu-hdr-fecha", "2026-10-12");
+  setV("granu-hdr-horno", "HR-3");
+  setV("granu-hdr-balanza", "BL-18 y BL-8");
+  setV("granu-hdr-masa-total", "25939");
+  setV("granu-hdr-masa-recipiente", "1490 (BNS-44) / 123.3 (R-12)");
+  setV("granu-hdr-masa-gruesa", "19703");
+  setV("granu-hdr-masa-fina", "6236");
+  setV("granu-hdr-humedad", "2.6");
 
-  // Muestra 1 (gruesos, completos)
-  const demoM1 = {
-    '1in': '550.00', '3_4in': '600.00', '1_2in': '500.00',
-    '3_8in': '400.00', '1_4in': '300.00', 'n4': '200.00'
+  // Control de secado (parte gruesa y fina)
+  const sec = {
+    g1: ["2026-10-12", "17:00", "19703"], g2: ["2026-10-13", "08:30", "19541"],
+    g3: ["2026-10-13", "09:45", "19541"], g4: ["2026-10-14", "08:25", "19491"],
+    f1: ["2026-10-12", "17:01", "639.5"], f2: ["2026-10-13", "08:31", "623.3"],
+    f3: ["2026-10-13", "09:46", "623.3"], f4: ["2026-10-14", "08:26", "581.3"]
   };
-  // Muestra 2 (finos medidos en la porción cuarteada de 600 g)
-  const demoM2 = {
-    'n10': '150.00', 'n20': '120.00', 'n30': '90.00', 'n40': '60.00',
-    'n60': '70.00', 'n100': '50.00', 'n140': '30.00', 'n200': '20.00', 'pan': '10.00'
-  };
-
-  ASTM_SIEVES.forEach(s => {
-    const input = document.getElementById(`granu-ret-${s.id}`);
-    if (input) input.value = demoM1[s.id] || '0.00';
-    const input2 = document.getElementById(`granu-ret2-${s.id}`);
-    if (input2) input2.value = demoM2[s.id] || '0.00';
+  Object.entries(sec).forEach(([k, [f, h, m]]) => {
+    setV(`sec-${k}-fecha`, f); setV(`sec-${k}-hora`, h); setV(`sec-${k}-masa`, m);
   });
 
-  const perdidaEl = document.getElementById("granu-live-perdida");
-  if (perdidaEl) perdidaEl.textContent = "50.00 g (1.00 %)";
+  // Tamices: M-1 (gruesa) y M-2 (fina)
+  const m1 = { '2in': 3536, '1_5in': 4670, '1in': 4734, '3_4in': 1855, '1_2in': 2109, '3_8in': 1061, '1_4in': 1046, 'n4': 459, 'n10': 21 };
+  const m2 = { 'n10': 88.1, 'n20': 37.2, 'n30': 39.1, 'n40': 87.3, 'n60': 168.9, 'n100': 107.4, 'n140': 37.2, 'n200': 15.8, 'pan': 0.3 };
+  ASTM_SIEVES.forEach(s => {
+    setV(`granu-ret-${s.id}`, m1[s.id] !== undefined ? m1[s.id] : "");
+    setV(`granu-ret2-${s.id}`, m2[s.id] !== undefined ? m2[s.id] : "");
+  });
 
-  document.getElementById("granu-obs").value = "Muestra de suelo granular ensayada por Tamizado Compuesto con cuarteo (factor k = 4) según Norma ASTM D6913 / NTP 339.128.";
+  document.getElementById("granu-obs").value = "Análisis granulométrico según ASTM D6913 / D6913M (Método A, Tamizado Compuesto). Lavado de finos por tamiz N°200 según ASTM D1140.";
   calcularGranulometria();
+}
+
+// ===================================================================
+// 9B. LÓGICA DE ENSAYO 05: LÍMITES DE ATTERBERG (ASTM D4318 / NTP 339.129)
+// ===================================================================
+let attChartInstance = null;
+const ATT_LL_ROWS = 4;
+const ATT_LP_ROWS = 2;
+
+const numById = id => {
+  const el = document.getElementById(id);
+  if (!el || el.value === "") return null;
+  const v = parseFloat(el.value);
+  return isNaN(v) ? null : v;
+};
+
+function initAtterbergEvents() {
+  let llHtml = "";
+  for (let i = 1; i <= ATT_LL_ROWS; i++) {
+    llHtml += `
+      <tr>
+        <td class="text-center font-bold text-accent">${i}</td>
+        <td><input type="number" step="1" min="1" class="input-control font-mono" id="att-ll-${i}-golpes" placeholder="${[32, 26, 21, 16][i - 1]}"></td>
+        <td><input type="number" step="0.01" class="input-control font-mono" id="att-ll-${i}-mh" placeholder="0.00"></td>
+        <td><input type="number" step="0.01" class="input-control font-mono" id="att-ll-${i}-ms" placeholder="0.00"></td>
+        <td><input type="number" step="0.01" class="input-control font-mono" id="att-ll-${i}-cap" placeholder="0.00"></td>
+      </tr>`;
+  }
+  document.getElementById("tbody-att-ll-inputs").innerHTML = llHtml;
+
+  let lpHtml = "";
+  for (let i = 1; i <= ATT_LP_ROWS; i++) {
+    lpHtml += `
+      <tr>
+        <td class="text-center font-bold text-accent">${i}</td>
+        <td><input type="number" step="0.01" class="input-control font-mono" id="att-lp-${i}-mh" placeholder="0.00"></td>
+        <td><input type="number" step="0.01" class="input-control font-mono" id="att-lp-${i}-ms" placeholder="0.00"></td>
+        <td><input type="number" step="0.01" class="input-control font-mono" id="att-lp-${i}-cap" placeholder="0.00"></td>
+      </tr>`;
+  }
+  document.getElementById("tbody-att-lp-inputs").innerHTML = lpHtml;
+
+  document.getElementById("att-np").addEventListener("change", toggleAtterbergNP);
+  document.getElementById("btn-calcular-att").addEventListener("click", calcularAtterberg);
+  document.getElementById("btn-limpiar-att").addEventListener("click", limpiarAtterberg);
+  document.getElementById("btn-fill-demo-att").addEventListener("click", cargarDemoAtterberg);
+  document.getElementById("btn-exportar-pdf-att").addEventListener("click", () => {
+    if (!GeoState.ensayos.atterberg.calculado) {
+      alert("Para exportar el informe en PDF, primero ingrese los datos y presione '⚡ Calcular Límites'.");
+      return;
+    }
+    generarPDFIndividual("atterberg");
+  });
+}
+
+function toggleAtterbergNP() {
+  const np = document.getElementById("att-np").checked;
+  document.querySelectorAll("#att-form-fields input.input-control").forEach(i => { i.disabled = np; });
+}
+
+// Regresión lineal  w = m·log10(N) + b
+function regresionLineal(xs, ys) {
+  const n = xs.length;
+  const sx = xs.reduce((a, v) => a + v, 0), sy = ys.reduce((a, v) => a + v, 0);
+  const sxx = xs.reduce((a, v) => a + v * v, 0);
+  const sxy = xs.reduce((a, v, i) => a + v * ys[i], 0);
+  const den = n * sxx - sx * sx;
+  const m = den === 0 ? 0 : (n * sxy - sx * sy) / den;
+  const b = den === 0 ? sy / n : (sy - m * sx) / n;
+  const ym = sy / n;
+  const ssTot = ys.reduce((a, v) => a + (v - ym) * (v - ym), 0);
+  const ssRes = ys.reduce((a, v, i) => a + Math.pow(v - (m * xs[i] + b), 2), 0);
+  const r2 = ssTot === 0 ? 1 : 1 - ssRes / ssTot;
+  return { m, b, r2 };
+}
+
+// Clasificación de plasticidad (carta de Casagrande, línea A: IP = 0.73·(LL − 20))
+function clasificarPlasticidad(ll, ip) {
+  const lineaA = 0.73 * (ll - 20);
+  let grupo;
+  if (ip >= 4 && ip <= 7 && ip >= lineaA) grupo = "CL-ML";
+  else if (ip >= lineaA) grupo = ll < 50 ? "CL" : "CH";
+  else grupo = ll < 50 ? "ML" : "MH";
+  const nombre = { "CL": "Arcilla de baja plasticidad", "CH": "Arcilla de alta plasticidad", "ML": "Limo de baja plasticidad", "MH": "Limo de alta plasticidad", "CL-ML": "Limo arcilloso" }[grupo];
+  let nivel;
+  if (ip < 7) nivel = "Baja plasticidad";
+  else if (ip <= 17) nivel = "Plasticidad media";
+  else nivel = "Alta plasticidad";
+  return { grupo, nombre, nivel };
+}
+
+function calcularAtterberg() {
+  try {
+    const obs = document.getElementById("att-obs").value.trim();
+    const a = GeoState.ensayos.atterberg;
+
+    if (document.getElementById("att-np").checked) {
+      GeoState.ensayos.atterberg = {
+        calculado: true, np: true, ll: null, lp: null, ip: null, lc: null,
+        ll_pts: [], lp_pts: [], m: null, b: null, r2: null, clase: null, observaciones: obs
+      };
+      renderResultadosAtterberg();
+      updateDashboardAtterbergSummary();
+      refrescarClasificacionGranu();
+      showToast("Suelo No Plástico (NP) registrado.");
+      return;
+    }
+
+    // --- Límite Líquido ---
+    const llPts = [];
+    for (let i = 1; i <= ATT_LL_ROWS; i++) {
+      const g = numById(`att-ll-${i}-golpes`), mh = numById(`att-ll-${i}-mh`), ms = numById(`att-ll-${i}-ms`), cap = numById(`att-ll-${i}-cap`);
+      if (g === null && mh === null && ms === null && cap === null) continue;
+      if (g === null || mh === null || ms === null || cap === null) throw new Error(`Complete todos los datos de la prueba ${i} del Límite Líquido.`);
+      if (g <= 0) throw new Error(`El N° de golpes de la prueba ${i} debe ser mayor a 0.`);
+      const mSeco = ms - cap;
+      if (mSeco <= 0) throw new Error(`En la prueba ${i} del LL, la masa seca + cápsula debe ser mayor que la cápsula.`);
+      if (mh < ms) throw new Error(`En la prueba ${i} del LL, la masa húmeda + cápsula no puede ser menor que la seca.`);
+      llPts.push({ n: i, golpes: g, mw: mh - ms, msuelo: mSeco, w: ((mh - ms) / mSeco) * 100 });
+    }
+
+    // --- Límite Plástico ---
+    const lpPts = [];
+    for (let i = 1; i <= ATT_LP_ROWS; i++) {
+      const mh = numById(`att-lp-${i}-mh`), ms = numById(`att-lp-${i}-ms`), cap = numById(`att-lp-${i}-cap`);
+      if (mh === null && ms === null && cap === null) continue;
+      if (mh === null || ms === null || cap === null) throw new Error(`Complete todos los datos de la prueba ${i} del Límite Plástico.`);
+      const mSeco = ms - cap;
+      if (mSeco <= 0) throw new Error(`En la prueba ${i} del LP, la masa seca + cápsula debe ser mayor que la cápsula.`);
+      if (mh < ms) throw new Error(`En la prueba ${i} del LP, la masa húmeda + cápsula no puede ser menor que la seca.`);
+      lpPts.push({ n: i, mw: mh - ms, msuelo: mSeco, w: ((mh - ms) / mSeco) * 100 });
+    }
+
+    // --- Límite de Contracción (opcional) ---
+    let lc = null;
+    const vh = numById("att-lc-vh"), mhc = numById("att-lc-mhc"), msc = numById("att-lc-msc"), mc = numById("att-lc-mc"), vs = numById("att-lc-vs");
+    if (vh !== null && mhc !== null && msc !== null && mc !== null && vs !== null) {
+      const ms = msc - mc;
+      if (ms <= 0) throw new Error("En el Límite de Contracción, la masa seca + cápsula debe ser mayor que la cápsula.");
+      const winic = ((mhc - msc) / ms) * 100;
+      lc = winic - ((vh - vs) / ms) * 100;
+    }
+
+    if (llPts.length < 2 && lpPts.length === 0 && lc === null) {
+      throw new Error("Ingrese al menos 2 pruebas del Límite Líquido y/o el Límite Plástico.");
+    }
+
+    let ll = null, m = null, b = null, r2 = null;
+    if (llPts.length >= 2) {
+      const reg = regresionLineal(llPts.map(p => Math.log10(p.golpes)), llPts.map(p => p.w));
+      m = reg.m; b = reg.b; r2 = reg.r2;
+      ll = m * Math.log10(25) + b;
+    }
+    const lp = lpPts.length ? lpPts.reduce((s, p) => s + p.w, 0) / lpPts.length : null;
+    const ip = (ll !== null && lp !== null) ? ll - lp : null;
+    const clase = (ll !== null && ip !== null && ip > 0) ? clasificarPlasticidad(ll, ip) : null;
+
+    GeoState.ensayos.atterberg = {
+      calculado: true, np: false, ll, lp, ip, lc,
+      ll_pts: llPts, lp_pts: lpPts, m, b, r2, clase, observaciones: obs
+    };
+
+    renderResultadosAtterberg();
+    updateDashboardAtterbergSummary();
+    refrescarClasificacionGranu();
+    showToast(ll !== null ? `Límites calculados: LL = ${ll.toFixed(1)} %${ip !== null ? ` • IP = ${ip.toFixed(1)} %` : ""}` : "Límites calculados.");
+  } catch (err) {
+    alert("Error en datos de Límites de Atterberg:\n" + err.message);
+  }
+}
+
+// Si la granulometría ya estaba calculada, vuelve a clasificar (AASHTO) con los nuevos límites
+function refrescarClasificacionGranu() {
+  const g = GeoState.ensayos.granulometria;
+  if (!g.calculado) return;
+  const lim = limitesParaClasificar();
+  const aashto = clasificarAASHTO(g.pasa10, g.pasa40, g.pasa200, lim.ll, lim.ip);
+  g.aashto = aashto.texto; g.aashto_grupo = aashto.grupo; g.aashto_ig = aashto.ig; g.aashto_origen = lim.origen;
+  renderResultadosGranulometria();
+  updateDashboardLab2Summary();
+}
+
+function renderResultadosAtterberg() {
+  const a = GeoState.ensayos.atterberg;
+  if (!a.calculado) return;
+  document.getElementById("att-results-placeholder").classList.add("hidden");
+  document.getElementById("att-results-content").classList.remove("hidden");
+
+  const fmt = (v, d = 2) => (v === null || v === undefined) ? "—" : `${v.toFixed(d)} %`;
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+
+  if (a.np) {
+    ["att-res-ll", "att-res-lp", "att-res-ip", "att-res-lc"].forEach(id => set(id, "NP"));
+    set("att-res-class", "NP");
+    set("att-res-class-desc", "Suelo No Plástico");
+    set("att-res-eq", "—");
+    document.getElementById("tbody-att-ll-res").innerHTML = '<tr><td colspan="6" class="text-center">Suelo No Plástico: no se ejecutó el ensayo.</td></tr>';
+    document.getElementById("tbody-att-lp-res").innerHTML = "";
+    if (attChartInstance) { attChartInstance.destroy(); attChartInstance = null; }
+    return;
+  }
+
+  set("att-res-ll", fmt(a.ll));
+  set("att-res-lp", fmt(a.lp));
+  set("att-res-ip", fmt(a.ip));
+  set("att-res-lc", fmt(a.lc));
+  set("att-res-class", a.clase ? a.clase.grupo : "—");
+  set("att-res-class-desc", a.clase ? `${a.clase.nombre} • ${a.clase.nivel}` : (a.ip !== null && a.ip <= 0 ? "Índice de plasticidad ≤ 0: no plástico" : "Requiere LL y LP"));
+  set("att-res-eq", a.m !== null
+    ? `w = ${a.m.toFixed(3)}·log₁₀(N) + ${a.b.toFixed(3)}   (R² = ${a.r2.toFixed(4)})`
+    : "—");
+
+  document.getElementById("tbody-att-ll-res").innerHTML = a.ll_pts.map(p => `
+    <tr>
+      <td class="text-center">${p.n}</td>
+      <td class="font-mono text-center">${p.golpes}</td>
+      <td class="font-mono text-right">${p.mw.toFixed(2)}</td>
+      <td class="font-mono text-right">${p.msuelo.toFixed(2)}</td>
+      <td class="font-mono text-right font-bold text-primary">${p.w.toFixed(2)} %</td>
+    </tr>`).join("") || '<tr><td colspan="5" class="text-center">—</td></tr>';
+  document.getElementById("tbody-att-lp-res").innerHTML = a.lp_pts.map(p => `
+    <tr>
+      <td class="text-center">${p.n}</td>
+      <td class="font-mono text-right">${p.mw.toFixed(2)}</td>
+      <td class="font-mono text-right">${p.msuelo.toFixed(2)}</td>
+      <td class="font-mono text-right font-bold text-primary">${p.w.toFixed(2)} %</td>
+    </tr>`).join("") || '<tr><td colspan="4" class="text-center">—</td></tr>';
+
+  renderGraficoAtterberg(a);
+}
+
+function renderGraficoAtterberg(a) {
+  const canvas = document.getElementById("att-chart");
+  if (!canvas) return;
+  if (attChartInstance) { attChartInstance.destroy(); attChartInstance = null; }
+  if (a.m === null) return;
+
+  const gs = a.ll_pts.map(p => p.golpes);
+  const xmin = Math.min(10, Math.min(...gs) * 0.8);
+  const xmax = Math.max(100, Math.max(...gs) * 1.2);
+  const linea = [];
+  for (let i = 0; i <= 60; i++) {
+    const x = xmin * Math.pow(xmax / xmin, i / 60);
+    linea.push({ x, y: a.m * Math.log10(x) + a.b });
+  }
+  const ys = a.ll_pts.map(p => p.w).concat([a.ll]);
+  const ymin = Math.floor(Math.min(...ys) - 3), ymax = Math.ceil(Math.max(...ys) + 3);
+
+  attChartInstance = new Chart(canvas.getContext("2d"), {
+    type: 'scatter',
+    data: {
+      datasets: [
+        { label: 'Línea de fluidez', data: linea, type: 'line', borderColor: '#1565c0', borderWidth: 2.5, pointRadius: 0, fill: false, order: 3 },
+        { label: 'Ensayos', data: a.ll_pts.map(p => ({ x: p.golpes, y: p.w })), borderColor: '#ffffff', backgroundColor: '#0891b2', pointRadius: 6, borderWidth: 1.5, order: 2 },
+        { label: `LL = ${a.ll.toFixed(2)} % (25 golpes)`, data: [{ x: 25, y: a.ll }], backgroundColor: '#facc15', borderColor: '#111827', borderWidth: 1.5, pointRadius: 9, order: 1 },
+        { label: '25 golpes', data: [{ x: 25, y: ymin }, { x: 25, y: a.ll }], type: 'line', borderColor: '#f59e0b', borderDash: [5, 4], borderWidth: 1.5, pointRadius: 0, fill: false },
+        { label: 'LL', data: [{ x: xmin, y: a.ll }, { x: 25, y: a.ll }], type: 'line', borderColor: '#f59e0b', borderDash: [5, 4], borderWidth: 1.5, pointRadius: 0, fill: false }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      scales: {
+        x: { type: 'logarithmic', min: xmin, max: xmax, title: { display: true, text: 'Número de golpes (N) [escala logarítmica]', font: { weight: 'bold' } },
+          afterBuildTicks: ax => { ax.ticks = [10, 15, 20, 25, 30, 40, 50, 70, 100].filter(v => v >= xmin && v <= xmax).map(v => ({ value: v })); },
+          ticks: { callback: v => v } },
+        y: { min: ymin, max: ymax, title: { display: true, text: 'Contenido de humedad (%)', font: { weight: 'bold' } } }
+      },
+      plugins: {
+        legend: { position: 'top', labels: { filter: it => !['25 golpes', 'LL'].includes(it.text) } },
+        tooltip: { callbacks: { label: c => `N = ${c.raw.x.toFixed ? c.raw.x.toFixed(0) : c.raw.x} golpes | w = ${c.raw.y.toFixed(2)} %` } }
+      }
+    }
+  });
+}
+
+function limpiarAtterberg() {
+  document.querySelectorAll("#view-atterberg input.input-control").forEach(i => { i.value = ""; });
+  document.getElementById("att-np").checked = false;
+  toggleAtterbergNP();
+  document.getElementById("att-obs").value = "";
+  GeoState.ensayos.atterberg = {
+    calculado: false, np: false, ll: null, lp: null, ip: null, lc: null,
+    ll_pts: [], lp_pts: [], m: null, b: null, r2: null, clase: null, observaciones: ""
+  };
+  document.getElementById("att-results-content").classList.add("hidden");
+  document.getElementById("att-results-placeholder").classList.remove("hidden");
+  if (attChartInstance) { attChartInstance.destroy(); attChartInstance = null; }
+  updateDashboardAtterbergSummary();
+  refrescarClasificacionGranu();
+  showToast("Datos de Límites de Atterberg reiniciados.");
+}
+
+function cargarDemoAtterberg() {
+  document.getElementById("att-np").checked = false;
+  toggleAtterbergNP();
+  const setV = (id, v) => { document.getElementById(id).value = v; };
+  // Límite líquido (cápsula 14.00 g)
+  [[33, 38.95, 32.10], [27, 40.55, 33.05], [21, 37.60, 30.75], [15, 39.10, 31.60]].forEach(([g, mh, ms], i) => {
+    setV(`att-ll-${i + 1}-golpes`, g); setV(`att-ll-${i + 1}-mh`, mh.toFixed(2));
+    setV(`att-ll-${i + 1}-ms`, ms.toFixed(2)); setV(`att-ll-${i + 1}-cap`, "14.00");
+  });
+  // Límite plástico
+  [[24.30, 22.35, 14.10], [25.15, 23.05, 14.00]].forEach(([mh, ms, cap], i) => {
+    setV(`att-lp-${i + 1}-mh`, mh.toFixed(2)); setV(`att-lp-${i + 1}-ms`, ms.toFixed(2)); setV(`att-lp-${i + 1}-cap`, cap.toFixed(2));
+  });
+  // Límite de contracción
+  setV("att-lc-vh", "14.50"); setV("att-lc-mhc", "51.70"); setV("att-lc-msc", "41.50"); setV("att-lc-mc", "20.00"); setV("att-lc-vs", "9.00");
+  document.getElementById("att-obs").value = "Ensayo ejecutado con copa de Casagrande sobre material pasante la malla N°40 según ASTM D4318 / NTP 339.129.";
+  calcularAtterberg();
+}
+
+// ===================================================================
+// 9C. LÓGICA DE ENSAYO 06: COMPACTACIÓN PROCTOR (ASTM D698 / D1557 • NTP 339.141 / 339.142)
+// ===================================================================
+let proChartInstance = null;
+const PRO_ROWS = 5;
+
+function initProctorEvents() {
+  let html = "";
+  for (let i = 1; i <= PRO_ROWS; i++) {
+    html += `
+      <tr>
+        <td class="text-center font-bold text-accent">${i}</td>
+        <td><input type="number" step="0.1" class="input-control font-mono" id="pro-${i}-msh" placeholder="0.0"></td>
+        <td><input type="number" step="0.01" class="input-control font-mono" id="pro-${i}-tarro" placeholder="0.00"></td>
+        <td><input type="number" step="0.01" class="input-control font-mono" id="pro-${i}-tsh" placeholder="0.00"></td>
+        <td><input type="number" step="0.01" class="input-control font-mono" id="pro-${i}-tss" placeholder="0.00"></td>
+      </tr>`;
+  }
+  document.getElementById("tbody-pro-inputs").innerHTML = html;
+
+  document.getElementById("btn-calcular-pro").addEventListener("click", calcularProctor);
+  document.getElementById("btn-limpiar-pro").addEventListener("click", limpiarProctor);
+  document.getElementById("btn-fill-demo-pro").addEventListener("click", cargarDemoProctor);
+  document.getElementById("btn-usar-gs-pro").addEventListener("click", () => {
+    const gs = GeoState.ensayos.gravedad;
+    if (gs.calculado && gs.gs) {
+      document.getElementById("pro-gs").value = gs.gs.toFixed(3);
+      showToast(`Gs = ${gs.gs.toFixed(3)} copiada del Ensayo 03.`);
+    } else {
+      alert("Aún no hay Gs calculada. Calcule primero el Ensayo 03 (Gravedad Específica) o escriba el valor manualmente.");
+    }
+  });
+  document.getElementById("btn-exportar-pdf-pro").addEventListener("click", () => {
+    if (!GeoState.ensayos.proctor.calculado) {
+      alert("Para exportar el informe en PDF, primero ingrese los datos y presione '⚡ Calcular Proctor'.");
+      return;
+    }
+    generarPDFIndividual("proctor");
+  });
+}
+
+// Ajuste polinómico de 2.º grado y = a·x² + b·x + c (mínimos cuadrados, x centrada)
+function polyfit2(xs, ys) {
+  const n = xs.length;
+  const x0 = xs.reduce((s, v) => s + v, 0) / n;
+  const u = xs.map(v => v - x0);
+  const S = k => u.reduce((s, v) => s + Math.pow(v, k), 0);
+  const T = k => u.reduce((s, v, i) => s + Math.pow(v, k) * ys[i], 0);
+  const M = [
+    [S(4), S(3), S(2), T(2)],
+    [S(3), S(2), S(1), T(1)],
+    [S(2), S(1), n, T(0)]
+  ];
+  for (let c = 0; c < 3; c++) {
+    let p = c;
+    for (let r = c + 1; r < 3; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+    [M[c], M[p]] = [M[p], M[c]];
+    if (Math.abs(M[c][c]) < 1e-12) return null;
+    for (let r = 0; r < 3; r++) {
+      if (r === c) continue;
+      const f = M[r][c] / M[c][c];
+      for (let k = c; k < 4; k++) M[r][k] -= f * M[c][k];
+    }
+  }
+  const A = M[0][3] / M[0][0], B = M[1][3] / M[1][1], C = M[2][3] / M[2][2];
+  // y = A·(x−x0)² + B·(x−x0) + C  →  coeficientes en x
+  const a = A, b = B - 2 * A * x0, c = C - B * x0 + A * x0 * x0;
+  const ym = ys.reduce((s, v) => s + v, 0) / n;
+  const ssTot = ys.reduce((s, v) => s + (v - ym) * (v - ym), 0);
+  const ssRes = ys.reduce((s, v, i) => s + Math.pow(v - (a * xs[i] * xs[i] + b * xs[i] + c), 2), 0);
+  return { a, b, c, r2: ssTot === 0 ? 1 : 1 - ssRes / ssTot };
+}
+
+function calcularProctor() {
+  try {
+    const vol = numById("pro-vol"), pMolde = numById("pro-molde");
+    if (!vol || vol <= 0) throw new Error("Ingrese el volumen del molde (cm³) mayor a cero.");
+    if (pMolde === null || pMolde < 0) throw new Error("Ingrese el peso del molde (g).");
+    const gs = numById("pro-gs");
+    const obs = document.getElementById("pro-obs").value.trim();
+
+    const puntos = [];
+    for (let i = 1; i <= PRO_ROWS; i++) {
+      const msh = numById(`pro-${i}-msh`), tarro = numById(`pro-${i}-tarro`), tsh = numById(`pro-${i}-tsh`), tss = numById(`pro-${i}-tss`);
+      if (msh === null && tarro === null && tsh === null && tss === null) continue;
+      if (msh === null || tarro === null || tsh === null || tss === null) throw new Error(`Complete todos los datos del punto ${i}.`);
+      const mSuelo = msh - pMolde;
+      if (mSuelo <= 0) throw new Error(`En el punto ${i}, el molde + suelo húmedo debe ser mayor que el peso del molde.`);
+      const mSeco = tss - tarro;
+      if (mSeco <= 0) throw new Error(`En el punto ${i}, tarro + suelo seco debe ser mayor que el tarro.`);
+      if (tsh < tss) throw new Error(`En el punto ${i}, tarro + suelo húmedo no puede ser menor que tarro + suelo seco.`);
+      const w = ((tsh - tss) / mSeco) * 100;
+      const rhoH = mSuelo / vol;
+      puntos.push({ n: i, msuelo: mSuelo, rho_h: rhoH, w, rho_d: rhoH / (1 + w / 100) });
+    }
+    if (puntos.length < 3) throw new Error("Se requieren al menos 3 puntos para trazar la parábola de compactación.");
+
+    const fit = polyfit2(puntos.map(p => p.w), puntos.map(p => p.rho_d));
+    if (!fit || fit.a >= 0) throw new Error("Los puntos no forman una curva con máximo (la parábola es cóncava hacia arriba). Revise los datos: la densidad seca debe subir y luego bajar con la humedad.");
+
+    const och = -fit.b / (2 * fit.a);
+    const mds = fit.a * och * och + fit.b * och + fit.c;
+    const wmin = Math.min(...puntos.map(p => p.w)), wmax = Math.max(...puntos.map(p => p.w));
+    const optDentro = och >= wmin && och <= wmax;
+
+    GeoState.ensayos.proctor = {
+      calculado: true, vol, peso_molde: pMolde, gs: gs && gs > 0 ? gs : null,
+      puntos, a: fit.a, b: fit.b, c: fit.c, r2: fit.r2, och, mds, mds95: mds * 0.95,
+      opt_dentro: optDentro, observaciones: obs
+    };
+    renderResultadosProctor();
+    updateDashboardProctorSummary();
+    showToast(`Proctor: MDS = ${mds.toFixed(3)} g/cm³ • OCH = ${och.toFixed(2)} %`);
+  } catch (err) {
+    alert("Error en datos del Ensayo Proctor:\n" + err.message);
+  }
+}
+
+function renderResultadosProctor() {
+  const p = GeoState.ensayos.proctor;
+  if (!p.calculado) return;
+  document.getElementById("pro-results-placeholder").classList.add("hidden");
+  document.getElementById("pro-results-content").classList.remove("hidden");
+
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set("pro-res-mds", `${p.mds.toFixed(3)} g/cm³`);
+  set("pro-res-och", `${p.och.toFixed(2)} %`);
+  set("pro-res-mds95", `${p.mds95.toFixed(3)} g/cm³`);
+  set("pro-res-gamma", `${(p.mds * 9.80665).toFixed(2)} kN/m³`);
+  set("pro-res-eq", `ρd = ${p.a.toFixed(5)}·w² + ${p.b.toFixed(4)}·w + ${p.c.toFixed(4)}   (R² = ${p.r2.toFixed(4)})`);
+  set("pro-res-aviso", p.opt_dentro ? "✅ El óptimo cae dentro del rango de humedades ensayadas." : "⚠️ El óptimo queda fuera del rango ensayado: extienda la curva con humedades adicionales.");
+
+  if (p.gs) {
+    const zav = p.gs / (1 + (p.och / 100) * p.gs);
+    set("pro-res-zav", `${zav.toFixed(3)} g/cm³`);
+    set("pro-res-sr", `${(((p.och / 100) * p.gs) / (p.gs / p.mds - 1) * 100).toFixed(1)} %`);
+  } else {
+    set("pro-res-zav", "—");
+    set("pro-res-sr", "—");
+  }
+
+  document.getElementById("tbody-pro-res").innerHTML = p.puntos.map(x => `
+    <tr>
+      <td class="text-center">${x.n}</td>
+      <td class="font-mono text-right">${x.msuelo.toFixed(1)}</td>
+      <td class="font-mono text-right">${x.rho_h.toFixed(3)}</td>
+      <td class="font-mono text-right">${x.w.toFixed(2)} %</td>
+      <td class="font-mono text-right font-bold text-primary">${x.rho_d.toFixed(3)}</td>
+    </tr>`).join("");
+
+  renderGraficoProctor(p);
+}
+
+function renderGraficoProctor(p) {
+  const canvas = document.getElementById("pro-chart");
+  if (!canvas) return;
+  if (proChartInstance) { proChartInstance.destroy(); proChartInstance = null; }
+
+  const ws = p.puntos.map(x => x.w);
+  const xmin = Math.min(...ws, p.och) - 2, xmax = Math.max(...ws, p.och) + 2;
+  const curva = [];
+  for (let i = 0; i <= 80; i++) {
+    const x = xmin + (xmax - xmin) * i / 80;
+    curva.push({ x, y: p.a * x * x + p.b * x + p.c });
+  }
+  const datasets = [
+    { label: 'Curva Proctor', data: curva, type: 'line', borderColor: '#1565c0', borderWidth: 2.5, pointRadius: 0, fill: false, order: 4 },
+    { label: 'Puntos de laboratorio', data: p.puntos.map(x => ({ x: x.w, y: x.rho_d })), backgroundColor: '#0891b2', borderColor: '#ffffff', borderWidth: 1.5, pointRadius: 6, order: 2 },
+    { label: `Óptimo: MDS = ${p.mds.toFixed(3)} • OCH = ${p.och.toFixed(2)} %`, data: [{ x: p.och, y: p.mds }], backgroundColor: '#facc15', borderColor: '#111827', borderWidth: 1.5, pointRadius: 9, order: 1 },
+    { label: 'guía-w', data: [{ x: p.och, y: 0 }, { x: p.och, y: p.mds }], type: 'line', borderColor: '#f59e0b', borderDash: [5, 4], borderWidth: 1.5, pointRadius: 0, fill: false },
+    { label: 'guía-d', data: [{ x: xmin, y: p.mds }, { x: p.och, y: p.mds }], type: 'line', borderColor: '#f59e0b', borderDash: [5, 4], borderWidth: 1.5, pointRadius: 0, fill: false }
+  ];
+  const ys = p.puntos.map(x => x.rho_d).concat([p.mds]);
+  let ymin = Math.min(...ys) - 0.08, ymax = Math.max(...ys) + 0.08;
+  if (p.gs) {
+    const zav = [];
+    for (let i = 0; i <= 40; i++) {
+      const x = xmin + (xmax - xmin) * i / 40;
+      const y = p.gs / (1 + (x / 100) * p.gs);
+      if (y <= ymax + 0.25) zav.push({ x, y });
+    }
+    datasets.push({ label: `Saturación 100 % (Gs = ${p.gs.toFixed(2)})`, data: zav, type: 'line', borderColor: '#dc2626', borderDash: [2, 3], borderWidth: 1.5, pointRadius: 0, fill: false, order: 5 });
+    ymax = Math.max(ymax, Math.min(...zav.map(z => z.y)) + 0.02);
+  }
+
+  proChartInstance = new Chart(canvas.getContext("2d"), {
+    type: 'scatter',
+    data: { datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      scales: {
+        x: { type: 'linear', min: xmin, max: xmax, title: { display: true, text: 'Contenido de humedad, w (%)', font: { weight: 'bold' } } },
+        y: { min: ymin, max: ymax, title: { display: true, text: 'Densidad seca, ρd (g/cm³)', font: { weight: 'bold' } } }
+      },
+      plugins: {
+        legend: { position: 'top', labels: { filter: it => !it.text.startsWith('guía') } },
+        tooltip: { callbacks: { label: c => `w = ${c.raw.x.toFixed(2)} % | ρd = ${c.raw.y.toFixed(3)} g/cm³` } }
+      }
+    }
+  });
+}
+
+function limpiarProctor() {
+  document.querySelectorAll("#view-proctor input.input-control").forEach(i => { i.value = ""; });
+  document.getElementById("pro-obs").value = "";
+  GeoState.ensayos.proctor = {
+    calculado: false, vol: null, peso_molde: null, gs: null, puntos: [],
+    a: null, b: null, c: null, r2: null, och: null, mds: null, mds95: null, opt_dentro: true, observaciones: ""
+  };
+  document.getElementById("pro-results-content").classList.add("hidden");
+  document.getElementById("pro-results-placeholder").classList.remove("hidden");
+  if (proChartInstance) { proChartInstance.destroy(); proChartInstance = null; }
+  updateDashboardProctorSummary();
+  showToast("Datos del Ensayo Proctor reiniciados.");
+}
+
+function cargarDemoProctor() {
+  const setV = (id, v) => { document.getElementById(id).value = v; };
+  setV("pro-vol", "944"); setV("pro-molde", "4178.0");
+  const gs = GeoState.ensayos.gravedad;
+  setV("pro-gs", gs.calculado && gs.gs ? gs.gs.toFixed(3) : "2.650");
+  // [molde + suelo húmedo, tarro, tarro + húmedo, tarro + seco]
+  [[5992.8, 30.0, 138.0, 130.0], [6109.4, 30.0, 140.0, 130.0], [6186.8, 30.0, 142.0, 130.0],
+  [6190.5, 30.0, 144.0, 130.0], [6149.1, 30.0, 146.0, 130.0]].forEach((r, i) => {
+    setV(`pro-${i + 1}-msh`, r[0].toFixed(1)); setV(`pro-${i + 1}-tarro`, r[1].toFixed(2));
+    setV(`pro-${i + 1}-tsh`, r[2].toFixed(2)); setV(`pro-${i + 1}-tss`, r[3].toFixed(2));
+  });
+  document.getElementById("pro-obs").value = "Compactación en molde de 4\" (944 cm³), 3 capas y 25 golpes por capa, según ASTM D698 Método A.";
+  calcularProctor();
+}
+
+// ===================================================================
+// RESÚMENES DEL PANEL PRINCIPAL: ATTERBERG Y PROCTOR (cuadros aparte)
+// ===================================================================
+function setSummaryRow(valId, statusId, value, ok, okText = "Calculado", pendText = "Sin procesar") {
+  const v = document.getElementById(valId);
+  if (v) v.textContent = value;
+  const s = document.getElementById(statusId);
+  if (s) s.innerHTML = ok
+    ? `<span class="badge badge-success">${okText}</span>`
+    : `<span class="badge badge-pending">${pendText}</span>`;
+}
+
+function updateDashboardAtterbergSummary() {
+  const a = GeoState.ensayos.atterberg;
+  updateDashboardPills();
+  const pct = v => (v === null || v === undefined) ? "—" : `${v.toFixed(2)}`;
+  const card = document.getElementById("badge-card-att");
+  if (card) { card.textContent = a.calculado ? "Calculado" : "Sin calcular"; card.className = a.calculado ? "card-status calculated" : "card-status"; }
+  const prev = document.getElementById("val-preview-att");
+  if (prev) prev.textContent = !a.calculado ? "—" : (a.np ? "NP" : `LL ${a.ll !== null ? a.ll.toFixed(1) : "—"} • LP ${a.lp !== null ? a.lp.toFixed(1) : "—"} • IP ${a.ip !== null ? a.ip.toFixed(1) : "—"}`);
+
+  if (!a.calculado) {
+    ["ll", "lp", "ip", "lc", "clase", "eq", "n"].forEach(k => setSummaryRow(`td-asum-${k}`, `td-astatus-${k}`, "—", false));
+    return;
+  }
+  if (a.np) {
+    ["ll", "lp", "ip", "lc"].forEach(k => setSummaryRow(`td-asum-${k}`, `td-astatus-${k}`, "NP", true, "No plástico"));
+    setSummaryRow("td-asum-clase", "td-astatus-clase", "NP", true, "No plástico");
+    setSummaryRow("td-asum-eq", "td-astatus-eq", "—", false, "", "No aplica");
+    setSummaryRow("td-asum-n", "td-astatus-n", "—", false, "", "No aplica");
+    return;
+  }
+  setSummaryRow("td-asum-ll", "td-astatus-ll", pct(a.ll), a.ll !== null, "Calculado", "Requiere ≥ 2 pruebas");
+  setSummaryRow("td-asum-lp", "td-astatus-lp", pct(a.lp), a.lp !== null, "Calculado", "Sin datos");
+  setSummaryRow("td-asum-ip", "td-astatus-ip", pct(a.ip), a.ip !== null, "Calculado", "Requiere LL y LP");
+  setSummaryRow("td-asum-lc", "td-astatus-lc", pct(a.lc), a.lc !== null, "Calculado", "Opcional");
+  setSummaryRow("td-asum-clase", "td-astatus-clase", a.clase ? a.clase.grupo : "—", !!a.clase, "Clasificado", "Requiere IP > 0");
+  setSummaryRow("td-asum-eq", "td-astatus-eq", a.m !== null ? `R² = ${a.r2.toFixed(4)}` : "—", a.m !== null, a.r2 !== null && a.r2 >= 0.95 ? "Buen ajuste" : "Revisar ajuste", "Sin ajuste");
+  setSummaryRow("td-asum-n", "td-astatus-n", `${a.ll_pts.length} LL • ${a.lp_pts.length} LP`, true, "Registrado");
+}
+
+function updateDashboardProctorSummary() {
+  const p = GeoState.ensayos.proctor;
+  updateDashboardPills();
+  const card = document.getElementById("badge-card-pro");
+  if (card) { card.textContent = p.calculado ? "Calculado" : "Sin calcular"; card.className = p.calculado ? "card-status calculated" : "card-status"; }
+  const prev = document.getElementById("val-preview-pro");
+  if (prev) prev.textContent = p.calculado ? `MDS ${p.mds.toFixed(3)} • OCH ${p.och.toFixed(1)} %` : "—";
+
+  if (!p.calculado) {
+    ["mds", "och", "mds95", "gamma", "zav", "sr", "r2", "n"].forEach(k => setSummaryRow(`td-psum-${k}`, `td-pstatus-${k}`, "—", false));
+    return;
+  }
+  setSummaryRow("td-psum-mds", "td-pstatus-mds", p.mds.toFixed(3), true);
+  setSummaryRow("td-psum-och", "td-pstatus-och", p.och.toFixed(2), true, p.opt_dentro ? "Calculado" : "Fuera de rango");
+  setSummaryRow("td-psum-mds95", "td-pstatus-mds95", p.mds95.toFixed(3), true);
+  setSummaryRow("td-psum-gamma", "td-pstatus-gamma", (p.mds * 9.80665).toFixed(2), true);
+  if (p.gs) {
+    setSummaryRow("td-psum-zav", "td-pstatus-zav", (p.gs / (1 + (p.och / 100) * p.gs)).toFixed(3), true);
+    setSummaryRow("td-psum-sr", "td-pstatus-sr", (((p.och / 100) * p.gs) / (p.gs / p.mds - 1) * 100).toFixed(1), true);
+  } else {
+    setSummaryRow("td-psum-zav", "td-pstatus-zav", "—", false, "", "Requiere Gs");
+    setSummaryRow("td-psum-sr", "td-pstatus-sr", "—", false, "", "Requiere Gs");
+  }
+  setSummaryRow("td-psum-r2", "td-pstatus-r2", p.r2.toFixed(4), true, p.r2 >= 0.95 ? "Buen ajuste" : "Revisar ajuste");
+  setSummaryRow("td-psum-n", "td-pstatus-n", `${p.puntos.length}`, true, "Registrado");
 }
 
 // ===================================================================
@@ -2533,10 +3298,101 @@ function generarPDFIndividual(tipo) {
   } else if (tipo === "granulometria") {
     generarPDFConsolidadoLab2();
     return;
+  } else if (tipo === "atterberg" || tipo === "proctor") {
+    const esAtt = tipo === "atterberg";
+    filename = `Informe_${esAtt ? "Limites_Atterberg" : "Proctor"}_${GeoState.proyecto.muestra}.pdf`;
+    contentHTML = `
+      <div class="pdf-report-page">
+        <div class="pdf-header">
+          <div class="pdf-title-main">SOFTWARE DE MECÁNICA DE SUELOS • GEOLOGÍA FIGMM</div>
+          <div class="pdf-title-sub">${esAtt ? "INFORME TÉCNICO: LÍMITES DE ATTERBERG" : "INFORME TÉCNICO: ENSAYO DE COMPACTACIÓN PROCTOR"}</div>
+          <div class="pdf-norm-ref">${esAtt ? "Normas de referencia: ASTM D4318 / NTP 339.129 / MTC E110-E111" : "Normas de referencia: ASTM D698 / D1557 • NTP 339.141 / 339.142 • MTC E115-E116"}</div>
+        </div>
+        ${getPlantillaMetadatosHTML()}
+        ${esAtt ? getSeccionPDFAtterberg("") : getSeccionPDFProctor("")}
+        ${getPlantillaFirmasHTML()}
+      </div>
+    `;
   }
 
   printContainer.innerHTML = contentHTML;
   ejecutarDescargaPDF(filename);
+}
+
+// Sección PDF de Límites de Atterberg (individual y general)
+function getSeccionPDFAtterberg(num) {
+  const a = GeoState.ensayos.atterberg;
+  if (!a.calculado) return "";
+  const titulo = `${num}LÍMITES DE ATTERBERG (ASTM D4318)`;
+  if (a.np) {
+    return `<div class="pdf-section-title">${titulo}</div>
+      <table class="pdf-data-table"><thead><tr><th>LL</th><th>LP</th><th>IP</th><th>LC</th></tr></thead>
+      <tbody><tr><td style="text-align:center;font-weight:bold;">NP</td><td style="text-align:center;font-weight:bold;">NP</td><td style="text-align:center;font-weight:bold;">NP</td><td style="text-align:center;font-weight:bold;">NP</td></tr></tbody></table>
+      <p style="font-size:8.5pt;">Suelo No Plástico.${a.observaciones ? " " + a.observaciones : ""}</p>`;
+  }
+  const f = v => v === null ? "—" : `${v.toFixed(2)} %`;
+  let img = "";
+  if (attChartInstance) {
+    try {
+      img = `<div style="text-align:center;margin:6px 0;background:#fff;border:1px solid #cbd5e1;border-radius:4px;padding:6px;">
+        <img src="${attChartInstance.toBase64Image()}" style="max-width:100%;height:auto;max-height:230px;" /></div>`;
+    } catch (e) { console.warn("No se pudo exportar el diagrama de fluidez:", e); }
+  }
+  const filasLL = a.ll_pts.map(p => `<tr><td style="text-align:center;">${p.n}</td><td style="text-align:center;">${p.golpes}</td><td style="text-align:right;">${p.mw.toFixed(2)}</td><td style="text-align:right;">${p.msuelo.toFixed(2)}</td><td style="text-align:right;font-weight:bold;color:#1565c0;">${p.w.toFixed(2)} %</td></tr>`).join("");
+  const filasLP = a.lp_pts.map(p => `<tr><td style="text-align:center;">${p.n}</td><td style="text-align:right;">${p.mw.toFixed(2)}</td><td style="text-align:right;">${p.msuelo.toFixed(2)}</td><td style="text-align:right;font-weight:bold;color:#1565c0;">${p.w.toFixed(2)} %</td></tr>`).join("");
+  return `
+    <div class="pdf-section-title">${titulo}</div>
+    <table class="pdf-data-table">
+      <thead><tr><th>Límite Líquido (LL)</th><th>Límite Plástico (LP)</th><th>Índice de Plasticidad (IP)</th><th>Límite de Contracción (LC)</th><th>Clasificación</th></tr></thead>
+      <tbody><tr>
+        <td style="text-align:center;font-weight:bold;color:#b71c1c;">${f(a.ll)}</td>
+        <td style="text-align:center;font-weight:bold;">${f(a.lp)}</td>
+        <td style="text-align:center;font-weight:bold;color:#b71c1c;">${f(a.ip)}</td>
+        <td style="text-align:center;">${f(a.lc)}</td>
+        <td style="text-align:center;font-weight:bold;color:#1565c0;">${a.clase ? a.clase.grupo : "—"}</td>
+      </tr></tbody>
+    </table>
+    ${a.clase ? `<p style="font-size:8pt;color:#334155;margin:3px 0;"><strong>Plasticidad:</strong> ${a.clase.nombre} • ${a.clase.nivel} (carta de Casagrande)</p>` : ""}
+    ${a.m !== null ? `<p style="font-size:8pt;color:#334155;margin:3px 0;"><strong>Línea de fluidez:</strong> w = ${a.m.toFixed(3)}·log₁₀(N) + ${a.b.toFixed(3)} (R² = ${a.r2.toFixed(4)}); LL = w a 25 golpes.</p>` : ""}
+    ${filasLL ? `<table class="pdf-data-table"><thead><tr><th>Prueba LL</th><th>N.º golpes</th><th>Masa agua (g)</th><th>Masa suelo seco (g)</th><th>Humedad</th></tr></thead><tbody>${filasLL}</tbody></table>` : ""}
+    ${filasLP ? `<table class="pdf-data-table"><thead><tr><th>Prueba LP</th><th>Masa agua (g)</th><th>Masa suelo seco (g)</th><th>Humedad</th></tr></thead><tbody>${filasLP}</tbody></table>` : ""}
+    ${img}
+    ${a.observaciones ? `<p style="font-size:8.5pt;margin:6px 0;"><strong>Observaciones:</strong> ${a.observaciones}</p>` : ""}
+  `;
+}
+
+// Sección PDF del Ensayo Proctor (individual y general)
+function getSeccionPDFProctor(num) {
+  const p = GeoState.ensayos.proctor;
+  if (!p.calculado) return "";
+  let img = "";
+  if (proChartInstance) {
+    try {
+      img = `<div style="text-align:center;margin:6px 0;background:#fff;border:1px solid #cbd5e1;border-radius:4px;padding:6px;">
+        <img src="${proChartInstance.toBase64Image()}" style="max-width:100%;height:auto;max-height:230px;" /></div>`;
+    } catch (e) { console.warn("No se pudo exportar la curva Proctor:", e); }
+  }
+  const filas = p.puntos.map(x => `<tr><td style="text-align:center;">${x.n}</td><td style="text-align:right;">${x.msuelo.toFixed(1)}</td><td style="text-align:right;">${x.rho_h.toFixed(3)}</td><td style="text-align:right;">${x.w.toFixed(2)} %</td><td style="text-align:right;font-weight:bold;color:#1565c0;">${x.rho_d.toFixed(3)}</td></tr>`).join("");
+  return `
+    <div class="pdf-section-title">${num}ENSAYO DE COMPACTACIÓN PROCTOR (ASTM D698 / D1557)</div>
+    <table class="pdf-data-table">
+      <thead><tr><th>Máx. Densidad Seca (MDS)</th><th>Humedad Óptima (OCH)</th><th>95 % de la MDS</th><th>γd máx.</th><th>R² del ajuste</th></tr></thead>
+      <tbody><tr>
+        <td style="text-align:center;font-weight:bold;color:#b71c1c;">${p.mds.toFixed(3)} g/cm³</td>
+        <td style="text-align:center;font-weight:bold;color:#b71c1c;">${p.och.toFixed(2)} %</td>
+        <td style="text-align:center;">${p.mds95.toFixed(3)} g/cm³</td>
+        <td style="text-align:center;">${(p.mds * 9.80665).toFixed(2)} kN/m³</td>
+        <td style="text-align:center;">${p.r2.toFixed(4)}</td>
+      </tr></tbody>
+    </table>
+    <p style="font-size:8pt;color:#334155;margin:3px 0;">Molde: V = ${p.vol} cm³ • Peso = ${p.peso_molde} g • Ajuste parabólico: ρd = ${p.a.toFixed(5)}·w² + ${p.b.toFixed(4)}·w + ${p.c.toFixed(4)}</p>
+    <table class="pdf-data-table">
+      <thead><tr><th>Punto</th><th>Masa suelo húmedo (g)</th><th>Densidad húmeda (g/cm³)</th><th>Humedad</th><th>Densidad seca (g/cm³)</th></tr></thead>
+      <tbody>${filas}</tbody>
+    </table>
+    ${img}
+    ${p.observaciones ? `<p style="font-size:8.5pt;margin:6px 0;"><strong>Observaciones:</strong> ${p.observaciones}</p>` : ""}
+  `;
 }
 
 function generarPDFConsolidado() {
@@ -2779,7 +3635,8 @@ function generarPDFConsolidadoLab2() {
     <tr>
       <td style="text-align: center; font-weight: bold;">${t.nombre}</td>
       <td style="text-align: center;">${t.abertura > 0 ? t.abertura.toFixed(3) : '—'}</td>
-      <td style="text-align: right;">${t.retenido.toFixed(2)}</td>
+      <td style="text-align: right;">${t.m1 > 0 ? t.m1.toFixed(2) : '—'}</td>
+      <td style="text-align: right;">${t.m2 > 0 ? t.m2.toFixed(2) : '—'}</td>
       <td style="text-align: right; font-weight: bold;">${t.corregido.toFixed(2)}</td>
       <td style="text-align: right;">${t.porc_parcial.toFixed(2)} %</td>
       <td style="text-align: right;">${t.porc_acumulado.toFixed(2)} %</td>
@@ -2817,9 +3674,9 @@ function generarPDFConsolidadoLab2() {
       <table class="pdf-data-table">
         <thead>
           <tr>
-            <th>Masa Seca Inicial (W₁)</th>
+            <th>Masa Seca Total${g.metodo === "compuesto" ? ` (K = ${g.factor_k.toFixed(4)})` : " (W₁)"}</th>
             <th>Masa Seca Lavada (W₀)</th>
-            <th>Pérdida por Lavado (W₁ - W₀)</th>
+            <th>Pérdida por Lavado</th>
             <th>% Pérdida Finos</th>
             <th>Error de Tamizado (ΔError)</th>
             <th>Criterio Tolerancia</th>
@@ -2845,8 +3702,9 @@ function generarPDFConsolidadoLab2() {
           <tr>
             <th>Tamiz</th>
             <th>Abertura (mm)</th>
-            <th>Retenido (g)</th>
-            <th>Ret. Corregido (g)</th>
+            <th>M-1 Gruesa (g)</th>
+            <th>M-2 Fina (g)</th>
+            <th>Masa homog. (g)</th>
             <th>% Parcial</th>
             <th>% Acumulado</th>
             <th>% Que Pasa</th>
@@ -2890,7 +3748,9 @@ function generarPDFConsolidadoLab2() {
       </table>
 
       <div style="font-size: 8pt; margin: 4px 0 10px 0; color: #334155;">
-        <strong>Descripción Geotécnica:</strong> ${g.sucs_descripcion}
+        <strong>Descripción Geotécnica:</strong> ${g.sucs_descripcion} &bull;
+        <strong>AASHTO:</strong> ${g.aashto} (límites: ${g.aashto_origen}) &bull;
+        <strong>Arena:</strong> gruesa ${g.arena_gruesa.toFixed(2)} % / media ${g.arena_media.toFixed(2)} % / fina ${g.arena_fina.toFixed(2)} %
       </div>
 
       ${g.observaciones ? `
@@ -2937,10 +3797,10 @@ function ejecutarDescargaPDF(nombreArchivo) {
 
 // Informe GENERAL de resultados (todos los ensayos calculados en un solo PDF)
 function generarPDFGeneral() {
-  const { humedad, volumetrico, gravedad, granulometria } = GeoState.ensayos;
-  const algo = humedad.calculado || volumetrico.calculado || gravedad.calculado || granulometria.calculado;
+  const { humedad, volumetrico, gravedad, granulometria, atterberg, proctor } = GeoState.ensayos;
+  const algo = humedad.calculado || volumetrico.calculado || gravedad.calculado || granulometria.calculado || atterberg.calculado || proctor.calculado;
   if (!algo) {
-    alert("Aún no hay resultados.\n\nCalcula al menos un ensayo (Humedad, Peso Volumétrico, Gravedad o Granulometría) antes de generar el informe general.");
+    alert("Aún no hay resultados.\n\nCalcula al menos un ensayo (Humedad, Peso Volumétrico, Gravedad, Granulometría, Atterberg o Proctor) antes de generar el informe general.");
     return;
   }
 
@@ -2978,7 +3838,7 @@ function generarPDFGeneral() {
   let granuHTML = "";
   if (granulometria.calculado) {
     const g = granulometria;
-    const kInfo = (g.factor_k && g.factor_k !== 1) ? ` &bull; Factor de cuarteo k = ${g.factor_k.toFixed(4)}` : "";
+    const kInfo = g.metodo === "compuesto" ? ` &bull; Factor K = ${g.factor_k.toFixed(4)} &bull; AASHTO ${g.aashto}` : ` &bull; AASHTO ${g.aashto}`;
     granuHTML = `
       ${getPlantillaEncabezadoGranuHTML()}
       <div class="pdf-section-title">2. ANÁLISIS GRANULOMÉTRICO POR TAMIZADO (ASTM D6913)</div>
@@ -3012,6 +3872,8 @@ function generarPDFGeneral() {
       ${getPlantillaMetadatosHTML()}
       ${fisicasHTML}
       ${granuHTML}
+      ${getSeccionPDFAtterberg("3. ")}
+      ${getSeccionPDFProctor("4. ")}
       <div style="margin-top:28px;">${getPlantillaFirmasHTML()}</div>
     </div>
   `;

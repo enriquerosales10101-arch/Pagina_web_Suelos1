@@ -109,6 +109,12 @@
               class="badge-pending">Pendiente</strong></span>
           <span class="summary-pill" id="pill-summary-gs">03. Gs: <strong
               class="badge-pending">Pendiente</strong></span>
+          <span class="summary-pill" id="pill-summary-granu">04. Granulometría: <strong
+              class="badge-pending">Pendiente</strong></span>
+          <span class="summary-pill" id="pill-summary-att">05. Atterberg: <strong
+              class="badge-pending">Pendiente</strong></span>
+          <span class="summary-pill" id="pill-summary-pro">06. Proctor: <strong
+              class="badge-pending">Pendiente</strong></span>
         </div>
       </div>
 
@@ -421,12 +427,36 @@
                   <td id="td-gstatus-cc"><span class="badge badge-pending">Sin procesar</span></td>
                 </tr>
                 <tr>
-                  <td>Factor de Cuarteo</td>
-                  <td><strong>k</strong></td>
+                  <td>Subfracciones de Arena (gruesa / media / fina)</td>
+                  <td><strong>S</strong></td>
+                  <td class="font-mono font-bold" id="td-gsum-arenas">—</td>
+                  <td>%</td>
+                  <td>N°4–N°10 / N°10–N°40 / N°40–N°200</td>
+                  <td id="td-gstatus-arenas"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Clasificación AASHTO</td>
+                  <td><strong>AASHTO</strong></td>
+                  <td class="font-mono text-primary font-bold" id="td-gsum-aashto">—</td>
+                  <td>grupo (IG)</td>
+                  <td>AASHTO M 145 (límites de Atterberg si existen)</td>
+                  <td id="td-gstatus-aashto"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Factor de Homogenización</td>
+                  <td><strong>K</strong></td>
                   <td class="font-mono font-bold" id="td-gsum-k">—</td>
                   <td>—</td>
-                  <td>Peso total / porción</td>
-                  <td id="td-gstatus-k"><span class="badge badge-pending">Sin cuarteo</span></td>
+                  <td>(Mfs + M-1 plat. + pérd. gruesa) / Mo</td>
+                  <td id="td-gstatus-k"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Error de Tamizado</td>
+                  <td><strong>ΔE</strong></td>
+                  <td class="font-mono font-bold" id="td-gsum-error">—</td>
+                  <td>%</td>
+                  <td>ASTM D6913 (≤ 1.0 %)</td>
+                  <td id="td-gstatus-error"><span class="badge badge-pending">Sin procesar</span></td>
                 </tr>
               </tbody>
             </table>
@@ -434,6 +464,233 @@
         </div>
 
       </div><!-- /lab2-panel-embedded -->
+
+      <!-- ================================================================ -->
+      <!-- ENSAYOS 05 y 06: LÍMITES DE ATTERBERG Y PROCTOR (CUADROS APARTE) -->
+      <!-- ================================================================ -->
+      <div class="lab2-panel-embedded">
+
+        <div class="lab-divider">
+          <div class="divider-line"></div>
+        </div>
+
+        <div class="modules-grid">
+          <!-- Tarjeta 5: Límites de Atterberg -->
+          <div class="module-card">
+            <div class="card-num">05</div>
+            <div class="card-status" id="badge-card-att">Sin calcular</div>
+            <h3 class="card-title">Límites de Atterberg</h3>
+            <p class="card-norm">ASTM D4318 • NTP 339.129 • MTC E110 / E111</p>
+            <p class="card-desc">Límite líquido con diagrama de fluidez (Casagrande), límite plástico, índice de
+              plasticidad y límite de contracción, con clasificación en la carta de plasticidad.</p>
+            <div class="card-result-preview" id="preview-res-att">
+              <span class="preview-label">LL • LP • IP (%):</span>
+              <span class="preview-val" id="val-preview-att">—</span>
+            </div>
+            <button class="btn btn-card" id="btn-goto-atterberg">
+              <span>Abrir Ensayo 05 — Atterberg</span>
+              <span class="arrow">→</span>
+            </button>
+          </div>
+
+          <!-- Tarjeta 6: Proctor -->
+          <div class="module-card">
+            <div class="card-num">06</div>
+            <div class="card-status" id="badge-card-pro">Sin calcular</div>
+            <h3 class="card-title">Compactación Proctor</h3>
+            <p class="card-norm">ASTM D698 / D1557 • NTP 339.141 / 339.142 • MTC E115 / E116</p>
+            <p class="card-desc">Curva de compactación humedad vs. densidad seca por ajuste parabólico: máxima
+              densidad seca (MDS), humedad óptima (OCH) y curva de saturación.</p>
+            <div class="card-result-preview" id="preview-res-pro">
+              <span class="preview-label">MDS • OCH:</span>
+              <span class="preview-val" id="val-preview-pro">—</span>
+            </div>
+            <button class="btn btn-card" id="btn-goto-proctor">
+              <span>Abrir Ensayo 06 — Proctor</span>
+              <span class="arrow">→</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- CUADRO RESUMEN: LÍMITES DE ATTERBERG -->
+        <div class="summary-section">
+          <div class="section-header-row">
+            <div>
+              <h3 class="section-title">Síntesis de los Límites de Atterberg</h3>
+              <p class="section-subtitle">Resultados integrados del ensayo de plasticidad</p>
+            </div>
+            <button class="btn btn-secondary-sm" id="btn-sync-att">
+              <span class="icon">🔄</span> Sincronizar Atterberg
+            </button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table summary-table" id="table-summary-att">
+              <thead>
+                <tr>
+                  <th>Parámetro</th>
+                  <th>Símbolo</th>
+                  <th>Valor Obtenido</th>
+                  <th>Unidad</th>
+                  <th>Norma / Método</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Límite Líquido</td>
+                  <td><strong>LL</strong></td>
+                  <td class="font-mono text-primary font-bold" id="td-asum-ll">—</td>
+                  <td>%</td>
+                  <td>ASTM D4318 (a 25 golpes)</td>
+                  <td id="td-astatus-ll"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Límite Plástico</td>
+                  <td><strong>LP</strong></td>
+                  <td class="font-mono font-bold" id="td-asum-lp">—</td>
+                  <td>%</td>
+                  <td>ASTM D4318</td>
+                  <td id="td-astatus-lp"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Índice de Plasticidad</td>
+                  <td><strong>IP</strong></td>
+                  <td class="font-mono text-accent font-bold" id="td-asum-ip">—</td>
+                  <td>%</td>
+                  <td>LL − LP</td>
+                  <td id="td-astatus-ip"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Límite de Contracción</td>
+                  <td><strong>LC</strong></td>
+                  <td class="font-mono font-bold" id="td-asum-lc">—</td>
+                  <td>%</td>
+                  <td>ASTM D427 / NTP 339.140</td>
+                  <td id="td-astatus-lc"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Clasificación de Plasticidad</td>
+                  <td><strong>Casagrande</strong></td>
+                  <td class="font-mono text-primary font-bold" id="td-asum-clase">—</td>
+                  <td>—</td>
+                  <td>Carta de plasticidad (línea A)</td>
+                  <td id="td-astatus-clase"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Ajuste de la Línea de Fluidez</td>
+                  <td><strong>R²</strong></td>
+                  <td class="font-mono font-bold" id="td-asum-eq">—</td>
+                  <td>—</td>
+                  <td>Regresión w vs. log N</td>
+                  <td id="td-astatus-eq"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Pruebas Registradas</td>
+                  <td><strong>n</strong></td>
+                  <td class="font-mono font-bold" id="td-asum-n">—</td>
+                  <td>—</td>
+                  <td>LL • LP</td>
+                  <td id="td-astatus-n"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- CUADRO RESUMEN: PROCTOR -->
+        <div class="summary-section">
+          <div class="section-header-row">
+            <div>
+              <h3 class="section-title">Síntesis del Ensayo Proctor</h3>
+              <p class="section-subtitle">Resultados integrados del ensayo de compactación</p>
+            </div>
+            <button class="btn btn-secondary-sm" id="btn-sync-pro">
+              <span class="icon">🔄</span> Sincronizar Proctor
+            </button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table summary-table" id="table-summary-pro">
+              <thead>
+                <tr>
+                  <th>Parámetro</th>
+                  <th>Símbolo</th>
+                  <th>Valor Obtenido</th>
+                  <th>Unidad</th>
+                  <th>Norma / Método</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Máxima Densidad Seca</td>
+                  <td><strong>MDS</strong></td>
+                  <td class="font-mono text-primary font-bold" id="td-psum-mds">—</td>
+                  <td>g/cm³</td>
+                  <td>ASTM D698 / D1557</td>
+                  <td id="td-pstatus-mds"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Humedad Óptima de Compactación</td>
+                  <td><strong>OCH</strong></td>
+                  <td class="font-mono text-primary font-bold" id="td-psum-och">—</td>
+                  <td>%</td>
+                  <td>Vértice de la parábola</td>
+                  <td id="td-pstatus-och"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>95 % de la Máxima Densidad Seca</td>
+                  <td><strong>0.95·MDS</strong></td>
+                  <td class="font-mono font-bold" id="td-psum-mds95">—</td>
+                  <td>g/cm³</td>
+                  <td>Criterio de control en obra</td>
+                  <td id="td-pstatus-mds95"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Peso Volumétrico Seco Máximo</td>
+                  <td><strong>γd máx.</strong></td>
+                  <td class="font-mono text-accent font-bold" id="td-psum-gamma">—</td>
+                  <td>kN/m³</td>
+                  <td>ρd · g</td>
+                  <td id="td-pstatus-gamma"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Densidad Seca a Saturación (en OCH)</td>
+                  <td><strong>ρd,sat</strong></td>
+                  <td class="font-mono font-bold" id="td-psum-zav">—</td>
+                  <td>g/cm³</td>
+                  <td>Gs / (1 + w·Gs)</td>
+                  <td id="td-pstatus-zav"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Grado de Saturación en el Óptimo</td>
+                  <td><strong>Sr</strong></td>
+                  <td class="font-mono font-bold" id="td-psum-sr">—</td>
+                  <td>%</td>
+                  <td>w·Gs / e</td>
+                  <td id="td-pstatus-sr"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Ajuste de la Parábola</td>
+                  <td><strong>R²</strong></td>
+                  <td class="font-mono font-bold" id="td-psum-r2">—</td>
+                  <td>—</td>
+                  <td>Mínimos cuadrados</td>
+                  <td id="td-pstatus-r2"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Puntos de Compactación</td>
+                  <td><strong>n</strong></td>
+                  <td class="font-mono font-bold" id="td-psum-n">—</td>
+                  <td>—</td>
+                  <td>Mínimo 3 (ideal 5)</td>
+                  <td id="td-pstatus-n"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- /panel Atterberg + Proctor -->
 
       <!-- INFORME GENERAL DE TODAS LAS OPCIONES (al final del panel, a la derecha) -->
       <div style="display:flex; justify-content:flex-end; margin-top:1.75rem;">
@@ -1075,8 +1332,8 @@
             <span>✨ Ejemplo Simple</span>
           </button>
           <button class="btn btn-outline-sm" id="btn-fill-demo-granu-compuesto"
-            title="Cargar ejemplo de Tamizado Compuesto (con cuarteo)">
-            <span>✨ Ejemplo Compuesto</span>
+            title="Cargar los datos del formato UNI FIC AT-PR.4-F1 (Calicata C-1, Muestra M-1)">
+            <span>✨ Cargar Datos UNI (Foto)</span>
           </button>
         </div>
       </div>
@@ -1298,11 +1555,11 @@
             </div>
           </div>
 
-          <!-- Preparación y Masas Iniciales -->
-          <div class="form-card">
+          <!-- Preparación y Masas Iniciales (solo Método Simple) -->
+          <div class="form-card hidden" id="card-granu-simple-masas">
             <div class="card-head">
               <span class="card-head-icon">⚖️</span>
-              <h4 class="card-head-title">Masas de la Muestra y Control de Lavado</h4>
+              <h4 class="card-head-title">Masas de la Muestra y Control de Lavado (Método Simple)</h4>
             </div>
 
             <div class="form-grid-2">
@@ -1334,42 +1591,17 @@
             </div>
           </div>
 
-          <!-- Cuarteo y Factor k (OPCIONAL) -->
-          <div class="form-card">
+          <!-- Método Compuesto: factor K automático -->
+          <div class="form-card" id="card-granu-compuesto-info">
             <div class="card-head">
               <span class="card-head-icon">🧮</span>
-              <h4 class="card-head-title">Cuarteo y Factor k <span class="opcional-tag">(opcional)</span></h4>
+              <h4 class="card-head-title">Tamizado Compuesto: Factor K automático</h4>
             </div>
-            <p class="field-hint">Úsalo cuando la muestra es muy grande y se cuartea para analizar solo una porción. El
-              <strong>factor k</strong> escala lo retenido de la <strong>Muestra 2 (porción cuarteada)</strong> a la
-              muestra completa. Si no cuarteas, deja estos campos vacíos (k = 1).</p>
-
-            <div class="form-grid-2">
-              <div class="form-group">
-                <label for="granu-cuarteo-total">Peso total de la fracción (antes de cuartear) [g]</label>
-                <div class="input-with-unit">
-                  <input type="number" step="0.01" id="granu-cuarteo-total" class="input-control font-mono"
-                    placeholder="Ej. 4200.00">
-                  <span class="unit">g</span>
-                </div>
-              </div>
-              <div class="form-group">
-                <label for="granu-cuarteo-porcion">Peso de la porción cuarteada analizada [g]</label>
-                <div class="input-with-unit">
-                  <input type="number" step="0.01" id="granu-cuarteo-porcion" class="input-control font-mono"
-                    placeholder="Ej. 1050.00">
-                  <span class="unit">g</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="preview-mini-banner"
-              style="margin-top: 10px; padding: 8px 12px; background: var(--bg-card-alt); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 0.8rem; color: var(--neutral-muted);">Factor de cuarteo (k = Peso total ÷ Peso
-                porción):</span>
-              <span class="font-mono font-bold text-primary" id="granu-factor-k" style="font-size: 0.95rem;">k =
-                1.0000</span>
-            </div>
+            <p class="field-hint">Con el <strong>Método A Compuesto</strong> las masas salen de <strong>Datos del Ensayo</strong>
+              y <strong>Control de Secado</strong> (masa seca gruesa, masa seca de la submuestra fina Mo, masas lavadas y
+              % de humedad). El factor <strong>K = (Masa seca fina total + M-1 de los tamices con M-2 + pérdida de lavado
+              gruesa) ÷ Mo</strong> se calcula solo y se aplica a toda la columna <strong>M-2</strong>. La fila
+              <strong>M - Mo</strong> también se autocalcula.</p>
           </div>
 
           <!-- Tabla de Tamices ASTM E11 -->
@@ -1379,8 +1611,8 @@
               <h4 class="card-head-title">Registro de Masas Retenidas en Serie de Tamices</h4>
             </div>
             <p class="field-hint">Serie de tamices según norma ASTM E11 / ASTM D6913. <strong>M-1</strong>: retenido de la
-              muestra completa (gruesos). <strong>M-2</strong>: retenido de la porción cuarteada (finos), que se
-              multiplica por el factor k. Si no cuarteas, usa solo la columna M-1.</p>
+              parte gruesa. <strong>M-2</strong>: retenido de la submuestra fina, que se multiplica por el factor K
+              (automático). En Método Simple usa solo la columna M-1.</p>
 
             <div class="table-responsive">
               <table class="data-table input-table" id="table-granu-inputs">
@@ -1389,8 +1621,8 @@
                     <th style="width: 45px;">N.°</th>
                     <th>Tamiz (ASTM E11)</th>
                     <th>Abertura (mm)</th>
-                    <th>Retenido M-1<br><span style="font-weight:400;font-size:0.72rem;">completa (g)</span></th>
-                    <th>Retenido M-2<br><span style="font-weight:400;font-size:0.72rem;">cuarteado (g)</span></th>
+                    <th>Masa 1 · Gruesa<br><span style="font-weight:400;font-size:0.72rem;">M-1 (g)</span></th>
+                    <th>Masa 2 · Fina<br><span style="font-weight:400;font-size:0.72rem;">M-2 (g)</span></th>
                     <th>% Parcial<br><span style="font-weight:400;font-size:0.72rem;">retenido</span></th>
                     <th>% Acum.<br><span style="font-weight:400;font-size:0.72rem;">retenido</span></th>
                     <th>% Que<br><span style="font-weight:400;font-size:0.72rem;">pasa</span></th>
@@ -1482,6 +1714,24 @@
                 </div>
               </div>
 
+              <div class="results-kpi-grid">
+                <div class="kpi-mini-card">
+                  <span class="kpi-mini-label">SUBFRACCIONES DE ARENA (%)</span>
+                  <span class="kpi-mini-val font-mono" id="granu-res-arenas" style="font-size: 0.85rem;">—</span>
+                  <span class="kpi-mini-sub">N°4–N°10 • N°10–N°40 • N°40–N°200</span>
+                </div>
+                <div class="kpi-mini-card">
+                  <span class="kpi-mini-label">FACTOR DE HOMOGENIZACIÓN</span>
+                  <span class="kpi-mini-val font-mono text-primary" id="granu-res-k">—</span>
+                  <span class="kpi-mini-sub" id="granu-res-k-sub">—</span>
+                </div>
+                <div class="kpi-mini-card highlight">
+                  <span class="kpi-mini-label">CLASIFICACIÓN AASHTO</span>
+                  <span class="kpi-mini-val font-mono text-accent" id="granu-res-aashto">—</span>
+                  <span class="kpi-mini-sub" id="granu-res-aashto-sub">—</span>
+                </div>
+              </div>
+
               <!-- Control de Error Normativo -->
               <div class="formula-box" id="granu-error-box" style="margin-bottom: 15px;">
                 <span class="formula-title">Control de Masa y Error de Tamizado (ASTM D6913):</span>
@@ -1503,8 +1753,9 @@
                     <tr>
                       <th>Tamiz</th>
                       <th>Abertura (mm)</th>
-                      <th>Retenido (g)</th>
-                      <th>Ret. Corregido (g)</th>
+                      <th>M-1 Gruesa (g)</th>
+                      <th>M-2 Fina (g)</th>
+                      <th>Masa homog. (g)</th>
                       <th>% Parcial</th>
                       <th>% Acumulado</th>
                       <th>% Que Pasa</th>
@@ -1518,6 +1769,408 @@
             <!-- BOTÓN DE EXPORTACIÓN INDIVIDUAL -->
             <div class="results-export-footer">
               <button class="btn btn-export-single" id="btn-exportar-pdf-granu">
+                <span class="btn-icon">📄</span> Exportar este Ensayo (PDF)
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- VISTA: ENSAYO 05 — LÍMITES DE ATTERBERG                          -->
+    <!-- ================================================================ -->
+    <section class="view" id="view-atterberg">
+      <div class="view-header-detail">
+        <button class="btn btn-secondary-sm btn-back-dashboard">
+          <span>← Volver al Panel</span>
+        </button>
+        <div class="detail-titles">
+          <span class="norm-tag">ASTM D4318 • NTP 339.129 • MTC E110 / E111</span>
+          <h2 class="view-title">05. Límites de Atterberg</h2>
+          <p class="view-desc">Límite líquido (copa de Casagrande, diagrama de fluidez), límite plástico, índice de
+            plasticidad y límite de contracción del suelo que pasa la malla N°40.</p>
+        </div>
+        <div class="header-tools">
+          <button class="btn btn-outline-sm" id="btn-fill-demo-att">
+            <span>✨ Ejemplo</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="two-columns-layout">
+        <div class="col-inputs" id="att-form-fields">
+
+          <div class="form-card">
+            <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer; font-weight:600;">
+              <input type="checkbox" id="att-np"> Suelo No Plástico (NP)
+            </label>
+            <p class="field-hint" style="margin-top:0.4rem;">Márcalo si el suelo no pudo rolarse a 3 mm o no cerró la
+              ranura: LL, LP, IP y LC se reportan como NP.</p>
+          </div>
+
+          <div class="form-card">
+            <div class="card-head">
+              <span class="card-head-icon">💧</span>
+              <h4 class="card-head-title">Límite Líquido (Casagrande)</h4>
+            </div>
+            <p class="field-hint">Registre de 2 a 4 pruebas con distinto número de golpes (ideal entre 15 y 35). El LL
+              es la humedad a 25 golpes de la línea de fluidez.</p>
+            <div class="table-responsive">
+              <table class="data-table input-table">
+                <thead>
+                  <tr>
+                    <th style="width:45px;">N.°</th>
+                    <th>N.° de golpes</th>
+                    <th>Cáps. + suelo húmedo (g)</th>
+                    <th>Cáps. + suelo seco (g)</th>
+                    <th>Cápsula (g)</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-att-ll-inputs"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="form-card">
+            <div class="card-head">
+              <span class="card-head-icon">🧵</span>
+              <h4 class="card-head-title">Límite Plástico</h4>
+            </div>
+            <p class="field-hint">Rollitos de 3 mm de diámetro. Se promedian las pruebas ingresadas.</p>
+            <div class="table-responsive">
+              <table class="data-table input-table">
+                <thead>
+                  <tr>
+                    <th style="width:45px;">N.°</th>
+                    <th>Cáps. + suelo húmedo (g)</th>
+                    <th>Cáps. + suelo seco (g)</th>
+                    <th>Cápsula (g)</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-att-lp-inputs"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="form-card">
+            <div class="card-head">
+              <span class="card-head-icon">📏</span>
+              <h4 class="card-head-title">Límite de Contracción <span class="opcional-tag">(opcional)</span></h4>
+            </div>
+            <p class="field-hint">LC = w<sub>inicial</sub> − (V<sub>húmedo</sub> − V<sub>seco</sub>)·ρw / Ms × 100</p>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="att-lc-vh">Volumen de la cápsula, V húmedo (cm³)</label>
+                <input type="number" step="0.01" id="att-lc-vh" class="input-control font-mono" placeholder="0.00">
+              </div>
+              <div class="form-group">
+                <label for="att-lc-vs">Volumen de la pastilla seca, V seco (cm³)</label>
+                <input type="number" step="0.01" id="att-lc-vs" class="input-control font-mono" placeholder="0.00">
+              </div>
+            </div>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="att-lc-mhc">Cáps. + suelo húmedo (g)</label>
+                <input type="number" step="0.01" id="att-lc-mhc" class="input-control font-mono" placeholder="0.00">
+              </div>
+              <div class="form-group">
+                <label for="att-lc-msc">Cáps. + suelo seco (g)</label>
+                <input type="number" step="0.01" id="att-lc-msc" class="input-control font-mono" placeholder="0.00">
+              </div>
+            </div>
+            <div class="form-group" style="max-width: 260px;">
+              <label for="att-lc-mc">Masa de la cápsula (g)</label>
+              <input type="number" step="0.01" id="att-lc-mc" class="input-control font-mono" placeholder="0.00">
+            </div>
+          </div>
+
+          <div class="form-card">
+            <div class="card-head">
+              <span class="card-head-icon">📝</span>
+              <h4 class="card-head-title">Observaciones del Ensayo</h4>
+            </div>
+            <textarea id="att-obs" class="textarea-control" rows="2"
+              placeholder="Método de preparación, tiempo de curado, tipo de ranurador..."></textarea>
+          </div>
+
+          <div class="action-buttons-row">
+            <button class="btn btn-primary" id="btn-calcular-att">
+              <span class="btn-icon">⚡</span> Calcular Límites
+            </button>
+            <button class="btn btn-secondary" id="btn-limpiar-att">
+              <span class="btn-icon">🗑</span> Limpiar Datos
+            </button>
+          </div>
+        </div>
+
+        <div class="col-results">
+          <div class="results-card">
+            <div class="results-head">
+              <span class="results-icon">📊</span>
+              <h3 class="results-title">Resultados de los Límites de Atterberg</h3>
+            </div>
+
+            <div id="att-results-placeholder" class="results-empty">
+              <div class="empty-icon">📈</div>
+              <p class="empty-title">Sin resultados calculados</p>
+              <p class="empty-desc">Ingrese las pruebas a la izquierda y presione <strong>⚡ Calcular Límites</strong>.</p>
+            </div>
+
+            <div id="att-results-content" class="results-content-box hidden">
+              <div class="kpi-banner">
+                <span class="kpi-label">CLASIFICACIÓN DE PLASTICIDAD (CARTA DE CASAGRANDE)</span>
+                <span class="kpi-value font-mono" id="att-res-class">—</span>
+                <span class="kpi-sub" id="att-res-class-desc">—</span>
+              </div>
+
+              <div class="results-kpi-grid">
+                <div class="kpi-mini-card">
+                  <span class="kpi-mini-label">LÍMITE LÍQUIDO (LL)</span>
+                  <span class="kpi-mini-val font-mono text-accent" id="att-res-ll">—</span>
+                  <span class="kpi-mini-sub">a 25 golpes</span>
+                </div>
+                <div class="kpi-mini-card highlight">
+                  <span class="kpi-mini-label">LÍMITE PLÁSTICO (LP)</span>
+                  <span class="kpi-mini-val font-mono text-primary" id="att-res-lp">—</span>
+                  <span class="kpi-mini-sub">promedio de pruebas</span>
+                </div>
+                <div class="kpi-mini-card">
+                  <span class="kpi-mini-label">ÍNDICE DE PLASTICIDAD (IP)</span>
+                  <span class="kpi-mini-val font-mono text-accent" id="att-res-ip">—</span>
+                  <span class="kpi-mini-sub">LL − LP</span>
+                </div>
+                <div class="kpi-mini-card">
+                  <span class="kpi-mini-label">LÍMITE DE CONTRACCIÓN (LC)</span>
+                  <span class="kpi-mini-val font-mono" id="att-res-lc">—</span>
+                  <span class="kpi-mini-sub">opcional</span>
+                </div>
+              </div>
+
+              <div class="formula-box" style="margin-bottom: 15px;">
+                <span class="formula-title">Línea de fluidez (regresión lineal humedad vs. log N):</span>
+                <span id="att-res-eq">—</span>
+              </div>
+
+              <h4 class="sub-section-title">Diagrama de Fluidez</h4>
+              <div
+                style="background: white; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+                <div style="position:relative; height:320px;"><canvas id="att-chart"></canvas></div>
+              </div>
+
+              <h4 class="sub-section-title">Humedades del Límite Líquido</h4>
+              <div class="table-responsive">
+                <table class="data-table results-table">
+                  <thead>
+                    <tr>
+                      <th>Prueba</th>
+                      <th>N.° golpes</th>
+                      <th>Masa de agua (g)</th>
+                      <th>Masa suelo seco (g)</th>
+                      <th>Humedad (%)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbody-att-ll-res"></tbody>
+                </table>
+              </div>
+
+              <h4 class="sub-section-title">Humedades del Límite Plástico</h4>
+              <div class="table-responsive">
+                <table class="data-table results-table">
+                  <thead>
+                    <tr>
+                      <th>Prueba</th>
+                      <th>Masa de agua (g)</th>
+                      <th>Masa suelo seco (g)</th>
+                      <th>Humedad (%)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbody-att-lp-res"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="results-export-footer">
+              <button class="btn btn-export-single" id="btn-exportar-pdf-att">
+                <span class="btn-icon">📄</span> Exportar este Ensayo (PDF)
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- VISTA: ENSAYO 06 — COMPACTACIÓN PROCTOR                          -->
+    <!-- ================================================================ -->
+    <section class="view" id="view-proctor">
+      <div class="view-header-detail">
+        <button class="btn btn-secondary-sm btn-back-dashboard">
+          <span>← Volver al Panel</span>
+        </button>
+        <div class="detail-titles">
+          <span class="norm-tag">ASTM D698 / D1557 • NTP 339.141 / 339.142 • MTC E115 / E116</span>
+          <h2 class="view-title">06. Ensayo de Compactación (Proctor)</h2>
+          <p class="view-desc">Curva de compactación humedad vs. densidad seca, con máxima densidad seca (MDS) y
+            contenido de humedad óptimo (OCH).</p>
+        </div>
+        <div class="header-tools">
+          <button class="btn btn-outline-sm" id="btn-fill-demo-pro">
+            <span>✨ Ejemplo</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="two-columns-layout">
+        <div class="col-inputs">
+
+          <div class="form-card">
+            <div class="card-head">
+              <span class="card-head-icon">🧰</span>
+              <h4 class="card-head-title">Datos del Molde</h4>
+            </div>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="pro-vol">Volumen del molde (cm³)</label>
+                <div class="input-with-unit">
+                  <input type="number" step="0.01" id="pro-vol" class="input-control font-mono" placeholder="Ej. 944">
+                  <span class="unit">cm³</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="pro-molde">Peso del molde (g)</label>
+                <div class="input-with-unit">
+                  <input type="number" step="0.1" id="pro-molde" class="input-control font-mono" placeholder="Ej. 4178.0">
+                  <span class="unit">g</span>
+                </div>
+              </div>
+            </div>
+            <div class="form-group" style="max-width: 420px;">
+              <label for="pro-gs">Gravedad específica Gs <span class="opcional-tag">(opcional, para la curva de saturación)</span></label>
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="number" step="0.001" id="pro-gs" class="input-control font-mono" placeholder="Ej. 2.650">
+                <button type="button" class="btn btn-outline-sm" id="btn-usar-gs-pro" title="Copiar la Gs del Ensayo 03">
+                  <span>Usar Gs del Ensayo 03</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-card">
+            <div class="card-head">
+              <span class="card-head-icon">⚖️</span>
+              <h4 class="card-head-title">Datos de Laboratorio por Punto</h4>
+            </div>
+            <p class="field-hint">Mínimo 3 puntos (ideal 5) con distinta humedad de moldeo. La densidad seca debe
+              subir y luego bajar para que exista un óptimo.</p>
+            <div class="table-responsive">
+              <table class="data-table input-table">
+                <thead>
+                  <tr>
+                    <th style="width:45px;">Punto</th>
+                    <th>Molde + suelo húmedo (g)</th>
+                    <th>Tarro (g)</th>
+                    <th>Tarro + suelo húmedo (g)</th>
+                    <th>Tarro + suelo seco (g)</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-pro-inputs"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="form-card">
+            <div class="card-head">
+              <span class="card-head-icon">📝</span>
+              <h4 class="card-head-title">Observaciones del Ensayo</h4>
+            </div>
+            <textarea id="pro-obs" class="textarea-control" rows="2"
+              placeholder="Método (A/B/C), número de capas y golpes, energía de compactación..."></textarea>
+          </div>
+
+          <div class="action-buttons-row">
+            <button class="btn btn-primary" id="btn-calcular-pro">
+              <span class="btn-icon">⚡</span> Calcular Proctor
+            </button>
+            <button class="btn btn-secondary" id="btn-limpiar-pro">
+              <span class="btn-icon">🗑</span> Limpiar Datos
+            </button>
+          </div>
+        </div>
+
+        <div class="col-results">
+          <div class="results-card">
+            <div class="results-head">
+              <span class="results-icon">📊</span>
+              <h3 class="results-title">Resultados de la Compactación</h3>
+            </div>
+
+            <div id="pro-results-placeholder" class="results-empty">
+              <div class="empty-icon">📈</div>
+              <p class="empty-title">Sin resultados calculados</p>
+              <p class="empty-desc">Ingrese el molde y los puntos a la izquierda y presione <strong>⚡ Calcular Proctor</strong>.</p>
+            </div>
+
+            <div id="pro-results-content" class="results-content-box hidden">
+              <div class="kpi-banner">
+                <span class="kpi-label">MÁXIMA DENSIDAD SECA (MDS)</span>
+                <span class="kpi-value font-mono" id="pro-res-mds">—</span>
+                <span class="kpi-sub" id="pro-res-aviso">—</span>
+              </div>
+
+              <div class="results-kpi-grid">
+                <div class="kpi-mini-card highlight">
+                  <span class="kpi-mini-label">HUMEDAD ÓPTIMA (OCH)</span>
+                  <span class="kpi-mini-val font-mono text-primary" id="pro-res-och">—</span>
+                  <span class="kpi-mini-sub">w en el máximo de la parábola</span>
+                </div>
+                <div class="kpi-mini-card">
+                  <span class="kpi-mini-label">95 % DE LA MDS</span>
+                  <span class="kpi-mini-val font-mono text-accent" id="pro-res-mds95">—</span>
+                  <span class="kpi-mini-sub">compactación mínima en obra</span>
+                </div>
+                <div class="kpi-mini-card">
+                  <span class="kpi-mini-label">PESO VOLUMÉTRICO SECO MÁX.</span>
+                  <span class="kpi-mini-val font-mono" id="pro-res-gamma">—</span>
+                  <span class="kpi-mini-sub">γd = ρd · g</span>
+                </div>
+                <div class="kpi-mini-card">
+                  <span class="kpi-mini-label">SATURACIÓN EN EL ÓPTIMO (Sr)</span>
+                  <span class="kpi-mini-val font-mono" id="pro-res-sr">—</span>
+                  <span class="kpi-mini-sub" id="pro-res-zav">—</span>
+                </div>
+              </div>
+
+              <div class="formula-box" style="margin-bottom: 15px;">
+                <span class="formula-title">Ajuste parabólico de mínimos cuadrados:</span>
+                <span id="pro-res-eq">—</span>
+              </div>
+
+              <h4 class="sub-section-title">Curva de Compactación</h4>
+              <div
+                style="background: white; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+                <div style="position:relative; height:340px;"><canvas id="pro-chart"></canvas></div>
+              </div>
+
+              <h4 class="sub-section-title">Resultados por Punto</h4>
+              <div class="table-responsive">
+                <table class="data-table results-table">
+                  <thead>
+                    <tr>
+                      <th>Punto</th>
+                      <th>Masa suelo húmedo (g)</th>
+                      <th>ρ húmeda (g/cm³)</th>
+                      <th>Humedad (%)</th>
+                      <th>ρ seca (g/cm³)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbody-pro-res"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="results-export-footer">
+              <button class="btn btn-export-single" id="btn-exportar-pdf-pro">
                 <span class="btn-icon">📄</span> Exportar este Ensayo (PDF)
               </button>
             </div>
