@@ -2475,8 +2475,8 @@ function calcularAtterberg() {
       if (g === null || mh === null || ms === null || cap === null) throw new Error(`Complete todos los datos de la prueba ${i} del Límite Líquido.`);
       if (g <= 0) throw new Error(`El N° de golpes de la prueba ${i} debe ser mayor a 0.`);
       const mSeco = ms - cap;
-      if (mSeco <= 0) throw new Error(`En la prueba ${i} del LL, la masa seca + cápsula debe ser mayor que la cápsula.`);
-      if (mh < ms) throw new Error(`En la prueba ${i} del LL, la masa húmeda + cápsula no puede ser menor que la seca.`);
+      if (mSeco <= 0) throw new Error(`En la prueba ${i} del LL, la masa seca + recipiente debe ser mayor que el recipiente.`);
+      if (mh < ms) throw new Error(`En la prueba ${i} del LL, la masa húmeda + recipiente no puede ser menor que la seca.`);
       llPts.push({ n: i, golpes: g, mw: mh - ms, msuelo: mSeco, w: ((mh - ms) / mSeco) * 100 });
     }
 
@@ -2487,8 +2487,8 @@ function calcularAtterberg() {
       if (mh === null && ms === null && cap === null) continue;
       if (mh === null || ms === null || cap === null) throw new Error(`Complete todos los datos de la prueba ${i} del Límite Plástico.`);
       const mSeco = ms - cap;
-      if (mSeco <= 0) throw new Error(`En la prueba ${i} del LP, la masa seca + cápsula debe ser mayor que la cápsula.`);
-      if (mh < ms) throw new Error(`En la prueba ${i} del LP, la masa húmeda + cápsula no puede ser menor que la seca.`);
+      if (mSeco <= 0) throw new Error(`En la prueba ${i} del LP, la masa seca + recipiente debe ser mayor que el recipiente.`);
+      if (mh < ms) throw new Error(`En la prueba ${i} del LP, la masa húmeda + recipiente no puede ser menor que la seca.`);
       lpPts.push({ n: i, mw: mh - ms, msuelo: mSeco, w: ((mh - ms) / mSeco) * 100 });
     }
 
@@ -2497,7 +2497,7 @@ function calcularAtterberg() {
     const vh = numById("att-lc-vh"), mhc = numById("att-lc-mhc"), msc = numById("att-lc-msc"), mc = numById("att-lc-mc"), vs = numById("att-lc-vs");
     if (vh !== null && mhc !== null && msc !== null && mc !== null && vs !== null) {
       const ms = msc - mc;
-      if (ms <= 0) throw new Error("En el Límite de Contracción, la masa seca + cápsula debe ser mayor que la cápsula.");
+      if (ms <= 0) throw new Error("En el Límite de Contracción, la masa seca + recipiente debe ser mayor que el recipiente.");
       const winic = ((mhc - msc) / ms) * 100;
       lc = winic - ((vh - vs) / ms) * 100;
     }
@@ -2657,7 +2657,7 @@ function cargarDemoAtterberg() {
   document.getElementById("att-np").checked = false;
   toggleAtterbergNP();
   const setV = (id, v) => { document.getElementById(id).value = v; };
-  // Límite líquido (cápsula 14.00 g)
+  // Límite líquido (recipiente 14.00 g)
   [[33, 38.95, 32.10], [27, 40.55, 33.05], [21, 37.60, 30.75], [15, 39.10, 31.60]].forEach(([g, mh, ms], i) => {
     setV(`att-ll-${i + 1}-golpes`, g); setV(`att-ll-${i + 1}-mh`, mh.toFixed(2));
     setV(`att-ll-${i + 1}-ms`, ms.toFixed(2)); setV(`att-ll-${i + 1}-cap`, "14.00");
