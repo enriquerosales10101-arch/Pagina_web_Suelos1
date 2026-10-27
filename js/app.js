@@ -3896,18 +3896,39 @@ function generarPDFConsolidadoLab2() {
   ejecutarDescargaPDF(filename);
 }
 
+// Evita cortes feos: cada título se mantiene junto a su tabla corta y los gráficos no se parten
+function prepararSaltosPDF(root) {
+  root.querySelectorAll(".pdf-section-title").forEach(t => {
+    const n = t.nextElementSibling;
+    if (!n || (t.parentElement && t.parentElement.classList.contains("pdf-keep"))) return;
+    if (n.offsetHeight <= 330) {
+      const w = document.createElement("div");
+      w.className = "pdf-keep";
+      t.parentNode.insertBefore(w, t);
+      w.appendChild(t);
+      w.appendChild(n);
+    }
+  });
+  root.querySelectorAll("img").forEach(img => {
+    const p = img.parentElement;
+    if (p && p !== root) p.classList.add("pdf-keep");
+  });
+}
+
 function ejecutarDescargaPDF(nombreArchivo) {
   showToast("Generando documento PDF oficial...");
 
   const element = document.getElementById("print-container");
   element.style.display = "block";
+  prepararSaltosPDF(element);
 
   const opt = {
     margin: [10, 12, 10, 12],
     filename: nombreArchivo,
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-    jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' }
+    jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
+    pagebreak: { mode: ['css', 'legacy'], avoid: ['.pdf-keep', '.pdf-signatures', 'tr'] }
   };
 
   if (window.html2pdf) {
