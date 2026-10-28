@@ -273,6 +273,17 @@ const GeoState = {
       sucs_descripcion: "",
       observaciones: ""
     },
+    clasificacion: {
+      calculado: false,
+      entrada: null,
+      sucs: null,
+      aashto: null,
+      pasos: [],
+      tipo_finos: null,
+      incompleto: false,
+      graficar: false,
+      manual: false
+    },
     atterberg: {
       calculado: false,
       np: false,
@@ -315,6 +326,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initVolumetricoEvents();
   initGravedadEvents();
   initGranulometriaEvents();
+  initClasificacionEvents();
   initAtterbergEvents();
   initProctorEvents();
   initDashboardEvents();
@@ -322,6 +334,7 @@ document.addEventListener("DOMContentLoaded", () => {
   updateStripUI();
   updateDashboardPills();
   updateDashboardLab2Summary();
+  updateDashboardClasificacionSummary();
   updateDashboardAtterbergSummary();
   updateDashboardProctorSummary();
 });
@@ -355,6 +368,8 @@ function initNavigation() {
   document.getElementById("btn-goto-gravedad").addEventListener("click", () => switchView("view-gravedad"));
   const btnGotoGranu = document.getElementById("btn-goto-granulometria");
   if (btnGotoGranu) btnGotoGranu.addEventListener("click", () => switchView("view-granulometria"));
+  const btnGotoCls = document.getElementById("btn-goto-clasificacion");
+  if (btnGotoCls) btnGotoCls.addEventListener("click", () => switchView("view-clasificacion"));
   const btnGotoAtt = document.getElementById("btn-goto-atterberg");
   if (btnGotoAtt) btnGotoAtt.addEventListener("click", () => switchView("view-atterberg"));
   const btnGotoPro = document.getElementById("btn-goto-proctor");
@@ -1265,6 +1280,11 @@ function initDashboardEvents() {
     });
   }
 
+  const btnSyncCls = document.getElementById("btn-sync-cls");
+  if (btnSyncCls) btnSyncCls.addEventListener("click", () => {
+    sincronizarClasificacion();
+    showToast("Resultados de la Clasificación sincronizados.");
+  });
   const btnSyncAtt = document.getElementById("btn-sync-att");
   if (btnSyncAtt) btnSyncAtt.addEventListener("click", () => {
     updateDashboardAtterbergSummary();
@@ -1310,10 +1330,11 @@ function updateDashboardPills() {
   setCardBadge("badge-card-gs", gravedad.calculado);
 
   // Ensayos 04, 05 y 06 (tarjetas con su propio resumen)
-  const { granulometria, atterberg, proctor } = GeoState.ensayos;
+  const { granulometria, clasificacion, atterberg, proctor } = GeoState.ensayos;
   setBadge("pill-summary-granu", granulometria.calculado, `04. Granulometría: ${granulometria.calculado ? '✅' : '⏳'}`);
-  setBadge("pill-summary-att", atterberg.calculado, `05. Atterberg: ${atterberg.calculado ? '✅' : '⏳'}`);
-  setBadge("pill-summary-pro", proctor.calculado, `06. Proctor: ${proctor.calculado ? '✅' : '⏳'}`);
+  setBadge("pill-summary-cls", clasificacion.calculado, `05. Clasificación: ${clasificacion.calculado ? '✅' : '⏳'}`);
+  setBadge("pill-summary-att", atterberg.calculado, `06. Atterberg: ${atterberg.calculado ? '✅' : '⏳'}`);
+  setBadge("pill-summary-pro", proctor.calculado, `07. Proctor: ${proctor.calculado ? '✅' : '⏳'}`);
 
   const setCheck = (elId, status, text) => {
     const el = document.getElementById(elId);
@@ -1717,41 +1738,16 @@ function renderGranulometriaTable() {
 }
 
 // -------------------------------------------------------------------
-// SUCS preliminar (ASTM D2487) a partir de granulometría
-// -------------------------------------------------------------------
-function sucsPreliminarGranu(finos, grava, arena, cu, cc) {
-  const bien = lim => cu && cc && cu >= lim && cc >= 1.0 && cc <= 3.0;
-  if (finos >= 50.0) return { simbolo: "FINO", desc: "Suelo fino (Limo / Arcilla)" };
-  if (grava > arena) {
-    if (finos < 5.0) return bien(4.0)
-      ? { simbolo: "GW", desc: "Grava bien graduada" }
-      : { simbolo: "GP", desc: "Grava pobremente graduada" };
-    if (finos <= 12.0) return bien(4.0)
-      ? { simbolo: "GW-GM / GW-GC", desc: "Grava bien graduada con finos" }
-      : { simbolo: "GP-GM / GP-GC", desc: "Grava pobremente graduada con finos" };
-    return { simbolo: "GM / GC", desc: "Grava con finos limosos o arcillosos" };
-  }
-  if (finos < 5.0) return bien(6.0)
-    ? { simbolo: "SW", desc: "Arena bien graduada" }
-    : { simbolo: "SP", desc: "Arena pobremente graduada" };
-  if (finos <= 12.0) return bien(6.0)
-    ? { simbolo: "SW-SM / SW-SC", desc: "Arena bien graduada con finos" }
-    : { simbolo: "SP-SM / SP-SC", desc: "Arena pobremente graduada con finos" };
-  return { simbolo: "SM / SC", desc: "Arena con finos limosos o arcillosos" };
-}
-
-// -------------------------------------------------------------------
 // Clasificación AASHTO (M 145) con Índice de Grupo
 //   p10, p40, p200 = % que pasa; ll, ip = límites (0 si NP)
 // -------------------------------------------------------------------
 function clasificarAASHTO(p10, p40, p200, ll, ip) {
-  const np = !(ll > 0) && !(ip > 0);
   let grupo = "";
   let parcial = false; // A-2-6 / A-2-7 usan solo el término parcial del IG
   if (p200 <= 35) {
     if (p10 <= 50 && p40 <= 30 && p200 <= 15 && ip <= 6) grupo = "A-1-a";
     else if (p40 <= 50 && p200 <= 25 && ip <= 6) grupo = "A-1-b";
-    else if (p40 >= 51 && p200 <= 10 && np) grupo = "A-3";
+    else if (p40 >= 51 && p200 <= 10 && ip <= 0) grupo = "A-3";
     else if (ll <= 40 && ip <= 10) grupo = "A-2-4";
     else if (ll > 40 && ip <= 10) grupo = "A-2-5";
     else if (ll <= 40 && ip > 10) { grupo = "A-2-6"; parcial = true; }
@@ -1769,53 +1765,6 @@ function clasificarAASHTO(p10, p40, p200, ll, ip) {
     ig = Math.max(0, Math.round(ig));
   }
   return { grupo, ig, texto: `${grupo}(${ig})` };
-}
-
-// -------------------------------------------------------------------
-// CLASIFICACIÓN DEL SUELO (SUCS + AASHTO): necesita granulometría Y límites de Atterberg
-// -------------------------------------------------------------------
-function clasificarSuelo() {
-  const g = GeoState.ensayos.granulometria, a = GeoState.ensayos.atterberg;
-  if (!g.calculado) return { ok: false, motivo: "Falta calcular la Granulometría (Ensayo 04)." };
-  if (!a.calculado) return { ok: false, motivo: "Falta calcular los Límites de Atterberg." };
-  const np = !!a.np;
-  if (!np && (a.ll === null || a.ip === null)) return { ok: false, motivo: "Se necesitan el Límite Líquido y el Límite Plástico (para el IP)." };
-  const ll = np ? 0 : a.ll, ip = np ? 0 : Math.max(0, a.ip);
-
-  // AASHTO
-  const aashto = clasificarAASHTO(g.pasa10, g.pasa40, g.pasa200, ll, ip);
-
-  // SUCS (ASTM D2487)
-  const tipoFinos = () => { // M (limo), C (arcilla) o CM (zona rayada 4 ≤ IP ≤ 7)
-    if (np) return "M";
-    const lineaA = 0.73 * (ll - 20);
-    if (ip < 4 || ip < lineaA) return "M";
-    if (ip > 7) return "C";
-    return "CM";
-  };
-  let sucs;
-  if (g.finos >= 50) {
-    if (np || ip <= 0) sucs = { simbolo: ll >= 50 ? "MH" : "ML", desc: "Limo no plástico" };
-    else { const c = clasificarPlasticidad(ll, ip); sucs = { simbolo: c.grupo, desc: c.nombre }; }
-  } else {
-    const base = g.grava > g.arena ? "G" : "S";
-    const nom = base === "G" ? "Grava" : "Arena";
-    const t = tipoFinos();
-    if (g.finos < 5) {
-      const p = sucsPreliminarGranu(g.finos, g.grava, g.arena, g.cu, g.cc);
-      sucs = { simbolo: p.simbolo, desc: p.desc };
-    } else if (g.finos > 12) {
-      const sim = t === "CM" ? `${base}C-${base}M` : `${base}${t}`;
-      const d = t === "M" ? "limosa" : (t === "C" ? "arcillosa" : "arcillo-limosa");
-      sucs = { simbolo: sim, desc: `${nom} ${d}` };
-    } else {
-      const p = sucsPreliminarGranu(0, g.grava, g.arena, g.cu, g.cc); // solo W/P (graduación)
-      const w = p.simbolo.endsWith("W") ? "W" : "P";
-      const f = t === "C" ? "C" : "M";
-      sucs = { simbolo: `${base}${w}-${base}${f}`, desc: `${p.desc} con ${f === "C" ? "arcilla" : "limo"}` };
-    }
-  }
-  return { ok: true, sucs, aashto, np, ll, ip };
 }
 
 // -------------------------------------------------------------------
@@ -2024,6 +1973,7 @@ function calcularGranulometria() {
     sincronizarEncabezadoGranuAProyecto(GeoState.ensayos.granulometria.encabezado);
     renderResultadosGranulometria();
     updateDashboardLab2Summary();
+    sincronizarClasificacion();
     showToast(`Granulometría calculada: ${grava.toFixed(1)} % grava • ${arena.toFixed(1)} % arena • ${finos.toFixed(1)} % finos`);
 
   } catch (err) {
@@ -2303,6 +2253,7 @@ function limpiarGranulometria() {
   }
 
   updateDashboardLab2Summary();
+  sincronizarClasificacion();
   showToast("Datos de granulometría reiniciados.");
 }
 
@@ -2389,7 +2340,362 @@ function cargarDemoGranuCompuesto() {
 }
 
 // ===================================================================
-// 9B. LÓGICA DE ENSAYO 05: LÍMITES DE ATTERBERG (ASTM D4318 / NTP 339.129)
+// 9B. LÓGICA DE ENSAYO 05: CLASIFICACIÓN SUCS Y AASHTO (ASTM D2487 / AASHTO M 145)
+//     Misma lógica que la clase ClasificacionSuelos del programa del curso.
+// ===================================================================
+let clsChartInstance = null;
+let clsManual = false; // true si el usuario escribió datos a mano (no se pisan al calcular otros ensayos)
+const CLS_IDS = ["p4", "p10", "p40", "p200", "ll", "lp", "ip", "d60", "d30", "d10", "cu", "cc"];
+
+const clsNum = id => {
+  const el = document.getElementById(`cls-${id}`);
+  if (!el || el.value === "") return null;
+  const v = parseFloat(el.value);
+  return isNaN(v) ? null : v;
+};
+const clsSet = (id, v, dec = 2) => {
+  const el = document.getElementById(`cls-${id}`);
+  if (el) el.value = (v === null || v === undefined || isNaN(v)) ? "" : (typeof v === "number" ? v.toFixed(dec) : v);
+};
+
+function initClasificacionEvents() {
+  // Cu y Cc salen solos con D60, D30 y D10 (como en el programa del curso)
+  const calcCuCc = () => {
+    const d60 = clsNum("d60"), d30 = clsNum("d30"), d10 = clsNum("d10");
+    if (d60 !== null && d30 !== null && d10 !== null && d10 > 0 && d60 > 0) {
+      clsSet("cu", d60 / d10); clsSet("cc", (d30 * d30) / (d60 * d10));
+    }
+  };
+  // IP = LL − LP cuando hay LP
+  const calcIP = () => {
+    const ll = clsNum("ll"), lp = clsNum("lp");
+    if (ll !== null && lp !== null && lp > 0) clsSet("ip", ll - lp);
+  };
+  document.querySelectorAll("#view-clasificacion input.cls-in").forEach(inp => {
+    inp.addEventListener("input", () => { clsManual = true; });
+  });
+  ["d60", "d30", "d10"].forEach(k => document.getElementById(`cls-${k}`).addEventListener("input", calcCuCc));
+  ["ll", "lp"].forEach(k => document.getElementById(`cls-${k}`).addEventListener("input", calcIP));
+
+  document.getElementById("btn-calcular-cls").addEventListener("click", calcularClasificacion);
+  document.getElementById("btn-traer-cls").addEventListener("click", () => { clsManual = false; clsTraerDatos(false); });
+  document.getElementById("btn-limpiar-cls").addEventListener("click", limpiarClasificacion);
+  document.getElementById("btn-fill-demo-cls").addEventListener("click", cargarDemoClasificacion);
+  document.getElementById("btn-exportar-pdf-cls").addEventListener("click", () => {
+    if (!GeoState.ensayos.clasificacion.calculado) {
+      alert("Para exportar el informe en PDF, primero presione '⚡ Evaluar Clasificación'.");
+      return;
+    }
+    generarPDFIndividual("clasificacion");
+  });
+}
+
+// Copia a los campos lo calculado en Granulometría y Límites de Atterberg
+function clsTraerDatos(silent) {
+  const g = GeoState.ensayos.granulometria, a = GeoState.ensayos.atterberg;
+  let algo = false;
+  if (g.calculado) {
+    const pasa = id => { const t = g.tamices.find(x => x.id === id); return t ? t.porc_pasa : null; };
+    clsSet("p4", pasa("n4")); clsSet("p10", pasa("n10")); clsSet("p40", pasa("n40")); clsSet("p200", pasa("n200"));
+    clsSet("d60", g.d60, 3); clsSet("d30", g.d30, 3); clsSet("d10", g.d10, 3);
+    clsSet("cu", g.cu); clsSet("cc", g.cc);
+    algo = true;
+  }
+  if (a.calculado) {
+    if (a.np) { clsSet("ll", 0); clsSet("lp", 0); clsSet("ip", 0); }
+    else { clsSet("ll", a.ll); clsSet("lp", a.lp); clsSet("ip", a.ip); }
+    algo = true;
+  }
+  if (!algo && !silent) alert("Aún no hay Granulometría ni Límites de Atterberg calculados. Calcule esos ensayos o escriba los datos a mano.");
+  else if (!silent) showToast("Datos traídos de la Granulometría y de los Límites de Atterberg.");
+  return algo;
+}
+
+// Se llama al terminar la granulometría o los límites: trae los datos y, si ya están ambos ensayos, evalúa
+function sincronizarClasificacion() {
+  if (!clsManual) {
+    clsTraerDatos(true);
+    const g = GeoState.ensayos.granulometria, a = GeoState.ensayos.atterberg;
+    if (g.calculado && a.calculado) calcularClasificacion(true);
+    else if (!g.calculado || !a.calculado) {
+      GeoState.ensayos.clasificacion.calculado = false;
+      document.getElementById("cls-results-content").classList.add("hidden");
+      document.getElementById("cls-results-placeholder").classList.remove("hidden");
+      if (clsChartInstance) { clsChartInstance.destroy(); clsChartInstance = null; }
+    }
+  }
+  updateDashboardClasificacionSummary();
+}
+
+// -------------------------------------------------------------------
+// Núcleo: clasifica a partir de los datos (función pura)
+//   d = { p4, p10, p40, p200, ll, ip, cu, cc }
+// -------------------------------------------------------------------
+function clasificarDatos(d) {
+  const { p4, p10, p40, p200, ll, ip } = d;
+  const cu = d.cu, cc = d.cc;
+  const lineaA = 0.73 * (ll - 20);
+  const pasos = [];
+  const f1 = v => v.toFixed(1);
+
+  // Tipo de finos / plasticidad (carta de Casagrande)
+  let tipoFinos;
+  if (ip >= 4 && ip <= 7 && ip >= lineaA) tipoFinos = "CL-ML";
+  else if (ip > lineaA && ip >= 4) tipoFinos = "CL/CH";
+  else tipoFinos = "ML/MH";
+  const textoPlast = `Con LL = ${f1(ll)} % e IP = ${f1(ip)} %, la línea A da IP = 0.73·(LL − 20) = ${f1(lineaA)} %.`;
+
+  // ---------------- SUCS ----------------
+  let sucs = { simbolo: "", desc: "" };
+  let incompleto = false;
+  if (p200 >= 50) {
+    pasos.push(`Pasa la malla N°200 = ${f1(p200)} % (≥ 50 %): es un suelo de grano fino.`);
+    pasos.push(textoPlast);
+    if (tipoFinos === "CL-ML") sucs = { simbolo: "CL-ML", desc: "Arcilla limosa de baja plasticidad" };
+    else if (tipoFinos === "CL/CH") sucs = ll >= 50 ? { simbolo: "CH", desc: "Arcilla de alta plasticidad" } : { simbolo: "CL", desc: "Arcilla de baja plasticidad" };
+    else sucs = ll >= 50 ? { simbolo: "MH", desc: "Limo de alta plasticidad" } : { simbolo: "ML", desc: "Limo de baja plasticidad" };
+    pasos.push(`El punto (LL, IP) cae en la zona ${sucs.simbolo} de la carta de plasticidad (LL ${ll >= 50 ? "≥" : "<"} 50 %).`);
+  } else {
+    const grava = 100 - p4, arena = p4 - p200;
+    pasos.push(`Pasa la malla N°200 = ${f1(p200)} % (< 50 %): es un suelo de grano grueso.`);
+    pasos.push(`Grava = 100 − ${f1(p4)} = ${f1(grava)} % y arena = ${f1(p4)} − ${f1(p200)} = ${f1(arena)} %: predomina la ${grava > arena ? "grava (G)" : "arena (S)"}.`);
+    if (p200 < 12 && (cu === null || cc === null)) {
+      incompleto = true;
+      sucs = { simbolo: "Incompleto", desc: "Requiere Cu y Cc (ingrese D60, D30 y D10)" };
+      pasos.push("Con menos de 12 % de finos hay que conocer la graduación: faltan Cu y Cc.");
+    } else {
+      const esGrava = grava > arena;
+      const L = esGrava ? "G" : "S";
+      const nombre = esGrava ? "Grava" : "Arena";
+      const limCu = esGrava ? 4.0 : 6.0;
+      const bien = (cu !== null && cc !== null) ? (cu >= limCu && cc >= 1.0 && cc <= 3.0) : false;
+      if (p200 < 12) {
+        pasos.push(`Graduación: Cu = ${cu.toFixed(2)} (${bien || cu >= limCu ? "≥" : "<"} ${limCu}) y Cc = ${cc.toFixed(2)} (${cc >= 1 && cc <= 3 ? "dentro de" : "fuera de"} 1–3) → ${bien ? "bien graduada (W)" : "mal graduada (P)"}.`);
+      }
+      if (p200 < 5) {
+        sucs = bien ? { simbolo: `${L}W`, desc: `${nombre} bien graduada` } : { simbolo: `${L}P`, desc: `${nombre} pobremente graduada` };
+        pasos.push(`Finos ${f1(p200)} % < 5 %: se usa solo la graduación → ${sucs.simbolo}.`);
+      } else if (p200 <= 12) {
+        const f = tipoFinos === "ML/MH" ? "M" : "C";
+        sucs = {
+          simbolo: `${L}${bien ? "W" : "P"}-${L}${f}`,
+          desc: `${nombre} ${bien ? "bien" : "pobremente"} graduada con ${f === "M" ? "limo" : "arcilla"}`
+        };
+        pasos.push(`Finos entre 5 y 12 %: doble símbolo (graduación + tipo de finos). ${textoPlast} Finos ${tipoFinos} → ${sucs.simbolo}.`);
+      } else {
+        if (tipoFinos === "ML/MH") sucs = { simbolo: `${L}M`, desc: `${nombre} limosa` };
+        else if (tipoFinos === "CL/CH") sucs = { simbolo: `${L}C`, desc: `${nombre} arcillosa` };
+        else sucs = { simbolo: `${L}C-${L}M`, desc: `${nombre} arcillo-limosa` };
+        pasos.push(`Finos ${f1(p200)} % > 12 %: se clasifica por el tipo de finos. ${textoPlast} Finos ${tipoFinos} → ${sucs.simbolo}.`);
+      }
+    }
+  }
+
+  // ---------------- AASHTO ----------------
+  const aashto = clasificarAASHTO(p10, p40, p200, ll, ip);
+  if (p200 <= 35) {
+    pasos.push(`AASHTO: pasa N°200 = ${f1(p200)} % (≤ 35 %): material granular. Con N°10 = ${f1(p10)} %, N°40 = ${f1(p40)} % e IP = ${f1(ip)} % → grupo ${aashto.grupo}.`);
+  } else {
+    pasos.push(`AASHTO: pasa N°200 = ${f1(p200)} % (> 35 %): suelo limo-arcilloso. Con LL = ${f1(ll)} % e IP = ${f1(ip)} % → grupo ${aashto.grupo}.`);
+  }
+  pasos.push(`Índice de grupo IG = ${aashto.ig}${["A-1-a", "A-1-b", "A-3", "A-2-4", "A-2-5"].includes(aashto.grupo) ? " (para este grupo siempre es 0)" : ""} → ${aashto.texto}.`);
+
+  // ¿se grafica el punto en la carta? (finos, o finos > 12 % con M/C)
+  const graficar = p200 >= 50 || (p200 > 12 && /[MC]/.test(sucs.simbolo));
+  return { sucs, aashto, pasos, tipoFinos, incompleto, graficar, lineaA };
+}
+
+function calcularClasificacion(silent) {
+  try {
+    const p4 = clsNum("p4"), p10 = clsNum("p10"), p40 = clsNum("p40"), p200 = clsNum("p200");
+    if ([p4, p10, p40, p200].some(v => v === null)) throw new Error("Ingrese los % que pasan las mallas N°4, N°10, N°40 y N°200.");
+    if ([p4, p10, p40, p200].some(v => v < 0 || v > 100)) throw new Error("Los % pasantes deben estar entre 0 y 100.");
+    const ll = clsNum("ll") ?? 0;
+    const lp = clsNum("lp");
+    let ip = clsNum("ip");
+    if (lp !== null && lp > 0) { ip = ll - lp; clsSet("ip", ip); }
+    if (ip === null) ip = 0;
+    if (ll < 0 || ip < 0) throw new Error("El límite líquido y el índice plástico no pueden ser negativos (si el suelo es NP, déjelos en 0).");
+    const cu = clsNum("cu"), cc = clsNum("cc");
+
+    const entrada = { p4, p10, p40, p200, ll, ip, cu, cc, d60: clsNum("d60"), d30: clsNum("d30"), d10: clsNum("d10") };
+    const r = clasificarDatos(entrada);
+    GeoState.ensayos.clasificacion = {
+      calculado: true, entrada, sucs: r.sucs, aashto: r.aashto, pasos: r.pasos,
+      tipo_finos: r.tipoFinos, incompleto: r.incompleto, graficar: r.graficar, manual: clsManual
+    };
+    renderResultadosClasificacion();
+    updateDashboardClasificacionSummary();
+    if (!silent) showToast(`Clasificación: SUCS ${r.sucs.simbolo} • AASHTO ${r.aashto.texto}`);
+  } catch (err) {
+    if (!silent) alert("Error en la Clasificación:\n" + err.message);
+  }
+}
+
+function renderResultadosClasificacion() {
+  const c = GeoState.ensayos.clasificacion;
+  if (!c.calculado) return;
+  document.getElementById("cls-results-placeholder").classList.add("hidden");
+  document.getElementById("cls-results-content").classList.remove("hidden");
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set("cls-res-sucs", c.sucs.simbolo);
+  set("cls-res-sucs-desc", c.sucs.desc);
+  set("cls-res-aashto", c.aashto.texto);
+  set("cls-res-aashto-desc", `Grupo ${c.aashto.grupo} • índice de grupo ${c.aashto.ig}`);
+  document.getElementById("cls-res-pasos").innerHTML = c.pasos.map(p => `<li>${p}</li>`).join("");
+  set("cls-chart-nota", c.graficar
+    ? `Punto de la muestra: LL = ${c.entrada.ll.toFixed(1)} %, IP = ${c.entrada.ip.toFixed(1)} % (círculo amarillo).`
+    : "El punto (LL, IP) solo se grafica cuando hay suelo fino (N°200 ≥ 50 %) o más de 12 % de finos.");
+  renderCartaCasagrande(c);
+}
+
+// Carta de plasticidad de Casagrande (zonas, línea A, línea U, LL = 50) como en el programa del curso
+const casagrandePlugin = {
+  id: 'casagrande',
+  beforeDatasetsDraw(chart) {
+    const { ctx, chartArea: { left, right, top, bottom }, scales: { x, y } } = chart;
+    const X = v => x.getPixelForValue(v), Y = v => y.getPixelForValue(v);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(left, top, right - left, bottom - top); ctx.clip();
+    const poly = (pts, fill, hatch) => {
+      ctx.beginPath(); pts.forEach(([a, b], i) => (i ? ctx.lineTo(X(a), Y(b)) : ctx.moveTo(X(a), Y(b)))); ctx.closePath();
+      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+      if (hatch) {
+        ctx.save(); ctx.clip(); ctx.strokeStyle = 'rgba(34,34,34,0.6)'; ctx.lineWidth = 1;
+        for (let k = -400; k < 800; k += 6) { ctx.beginPath(); ctx.moveTo(left + k, bottom); ctx.lineTo(left + k + 300, bottom - 300); ctx.stroke(); }
+        ctx.restore(); ctx.beginPath(); pts.forEach(([a, b], i) => (i ? ctx.lineTo(X(a), Y(b)) : ctx.moveTo(X(a), Y(b)))); ctx.closePath();
+        ctx.strokeStyle = 'rgba(34,34,34,0.7)'; ctx.stroke();
+      }
+    };
+    const L = 100;
+    poly([[50, 0], [L, 0], [L, 0.73 * (L - 20)], [50, 21.9]], 'rgba(244,165,130,0.85)');            // MH / OH
+    poly([[50, 21.9], [L, 0.73 * (L - 20)], [L, 0.9 * (L - 8)], [50, 37.8]], 'rgba(124,161,204,0.85)'); // CH
+    poly([[15.7778, 7], [29.589, 7], [50, 21.9], [50, 37.8]], 'rgba(166,208,214,0.85)');              // CL
+    poly([[8, 0], [12.4444, 4], [25.4795, 4], [50, 21.9], [50, 0]], 'rgba(252,210,159,0.85)');        // ML / OL
+    poly([[12.4444, 4], [15.7778, 7], [29.589, 7], [25.4795, 4]], null, true);                         // CL-ML
+
+    // Líneas guía
+    const line = (pts, col, w, dash) => { ctx.beginPath(); ctx.setLineDash(dash || []); ctx.strokeStyle = col; ctx.lineWidth = w; pts.forEach(([a, b], i) => (i ? ctx.lineTo(X(a), Y(b)) : ctx.moveTo(X(a), Y(b)))); ctx.stroke(); ctx.setLineDash([]); };
+    line([[0, 4], [25.4795, 4]], '#d9a400', 1.5, [2, 3]);
+    line([[0, 7], [29.589, 7]], '#d9a400', 1.5, [2, 3]);
+    line([[8, 0], [L, 0.9 * (L - 8)]], '#1a365d', 2.5);       // Línea U
+    line([[20, 0], [L, 0.73 * (L - 20)]], '#002855', 2.5);    // Línea A
+    line([[50, 0], [50, 60]], '#d62728', 2, [6, 4]);          // LL = 50
+
+    // Etiquetas
+    ctx.fillStyle = '#111'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const lab = (t, a, b, size) => { ctx.font = `bold ${size || 12}px Inter, Arial, sans-serif`; ctx.fillText(t, X(a), Y(b)); };
+    lab('CL', 36, 18); lab('CH', 70, 42); lab('ML / OL', 38, 5); lab('MH / OH', 76, 15); lab('CL-ML', 19, 5.5, 9);
+    ctx.font = 'bold 10px Inter, Arial, sans-serif'; ctx.fillStyle = '#1a365d';
+    ctx.fillText('Línea U', X(58), Y(0.9 * 50) + 4); ctx.fillStyle = '#002855'; ctx.fillText('Línea A', X(90), Y(0.73 * 70) + 12);
+    ctx.restore();
+  }
+};
+
+function renderCartaCasagrande(c) {
+  const canvas = document.getElementById("cls-chart");
+  if (!canvas) return;
+  if (clsChartInstance) { clsChartInstance.destroy(); clsChartInstance = null; }
+  const datos = c.graficar ? [{ x: c.entrada.ll, y: c.entrada.ip }] : [];
+  clsChartInstance = new Chart(canvas.getContext("2d"), {
+    type: 'scatter',
+    plugins: [casagrandePlugin],
+    data: {
+      datasets: [{
+        label: 'Muestra (LL, IP)', data: datos,
+        backgroundColor: '#facc15', borderColor: '#111827', borderWidth: 1.5, pointRadius: 9, pointHoverRadius: 11
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      scales: {
+        x: { type: 'linear', min: 0, max: 100, title: { display: true, text: 'LÍMITE LÍQUIDO (LL), %', font: { weight: 'bold' } } },
+        y: { type: 'linear', min: 0, max: 60, title: { display: true, text: 'ÍNDICE DE PLASTICIDAD (IP), %', font: { weight: 'bold' } },
+          afterBuildTicks: ax => { ax.ticks = [0, 4, 7, 10, 20, 30, 40, 50, 60].map(v => ({ value: v })); } }
+      },
+      plugins: {
+        legend: { display: datos.length > 0, position: 'top' },
+        tooltip: { callbacks: { label: ctx => `LL = ${ctx.raw.x.toFixed(1)} % | IP = ${ctx.raw.y.toFixed(1)} %` } }
+      }
+    }
+  });
+}
+
+function limpiarClasificacion() {
+  document.querySelectorAll("#view-clasificacion input.cls-in").forEach(i => { i.value = ""; });
+  clsManual = false;
+  GeoState.ensayos.clasificacion = { calculado: false, entrada: null, sucs: null, aashto: null, pasos: [], tipo_finos: null, incompleto: false, graficar: false, manual: false };
+  document.getElementById("cls-results-content").classList.add("hidden");
+  document.getElementById("cls-results-placeholder").classList.remove("hidden");
+  if (clsChartInstance) { clsChartInstance.destroy(); clsChartInstance = null; }
+  updateDashboardClasificacionSummary();
+  showToast("Datos de clasificación reiniciados.");
+}
+
+function cargarDemoClasificacion() {
+  // Suelo fino de ejemplo (arcilla de baja plasticidad)
+  const v = { p4: 100, p10: 99.5, p40: 96.8, p200: 78.4, ll: 39.7, lp: 23.4, d60: "", d30: "", d10: "" };
+  CLS_IDS.forEach(k => clsSet(k, v[k] === undefined ? "" : v[k], 2));
+  clsSet("ip", 39.7 - 23.4);
+  clsManual = true;
+  calcularClasificacion();
+}
+
+function updateDashboardClasificacionSummary() {
+  updateDashboardPills();
+  const c = GeoState.ensayos.clasificacion;
+  const card = document.getElementById("badge-card-cls");
+  if (card) { card.textContent = c.calculado ? "Calculado" : "Sin calcular"; card.className = c.calculado ? "card-status calculated" : "card-status"; }
+  const prev = document.getElementById("val-preview-cls");
+  if (prev) prev.textContent = c.calculado ? `${c.sucs.simbolo} • ${c.aashto.texto}` : "—";
+  if (!c.calculado) {
+    ["sucs", "desc", "aashto", "ig", "finos", "lim", "gr"].forEach(k => setSummaryRow(`td-csum-${k}`, `td-cstatus-${k}`, "—", false));
+    return;
+  }
+  const e = c.entrada;
+  setSummaryRow("td-csum-sucs", "td-cstatus-sucs", c.sucs.simbolo, !c.incompleto, "Clasificado", "Incompleto");
+  setSummaryRow("td-csum-desc", "td-cstatus-desc", c.sucs.desc, !c.incompleto, "Clasificado", "Incompleto");
+  setSummaryRow("td-csum-aashto", "td-cstatus-aashto", c.aashto.texto, true, "Clasificado");
+  setSummaryRow("td-csum-ig", "td-cstatus-ig", String(c.aashto.ig), true);
+  setSummaryRow("td-csum-finos", "td-cstatus-finos", e.p200.toFixed(2), true, c.manual ? "Ingresado" : "De la granulometría");
+  setSummaryRow("td-csum-lim", "td-cstatus-lim", `${e.ll.toFixed(1)} / ${e.ip.toFixed(1)}`, true, c.manual ? "Ingresado" : "De Atterberg");
+  setSummaryRow("td-csum-gr", "td-cstatus-gr", (e.cu !== null && e.cc !== null) ? `${e.cu.toFixed(2)} / ${e.cc.toFixed(2)}` : "—", e.cu !== null && e.cc !== null, "Calculados", "No disponibles");
+}
+
+// Sección PDF de la Clasificación (individual y general)
+function getSeccionPDFClasificacion(num) {
+  const c = GeoState.ensayos.clasificacion;
+  if (!c.calculado) return "";
+  const e = c.entrada;
+  const img = safeChartImage(clsChartInstance);
+  return `
+    <div class="pdf-section-title">${num}CLASIFICACIÓN SUCS Y AASHTO (ASTM D2487 / AASHTO M 145)</div>
+    <table class="pdf-data-table">
+      <thead><tr><th>SUCS</th><th>Descripción</th><th>AASHTO</th><th>Índice de grupo</th></tr></thead>
+      <tbody><tr>
+        <td style="text-align:center;font-weight:bold;color:#1565c0;font-size:10pt;">${c.sucs.simbolo}</td>
+        <td style="text-align:center;">${c.sucs.desc}</td>
+        <td style="text-align:center;font-weight:bold;color:#b71c1c;font-size:10pt;">${c.aashto.texto}</td>
+        <td style="text-align:center;">${c.aashto.ig}</td>
+      </tr></tbody>
+    </table>
+    <table class="pdf-data-table">
+      <thead><tr><th>% N°4</th><th>% N°10</th><th>% N°40</th><th>% N°200</th><th>LL</th><th>IP</th><th>Cu</th><th>Cc</th></tr></thead>
+      <tbody><tr style="text-align:center;">
+        <td>${e.p4.toFixed(2)}</td><td>${e.p10.toFixed(2)}</td><td>${e.p40.toFixed(2)}</td><td>${e.p200.toFixed(2)}</td>
+        <td>${e.ll.toFixed(1)}</td><td>${e.ip.toFixed(1)}</td><td>${e.cu !== null ? e.cu.toFixed(2) : '—'}</td><td>${e.cc !== null ? e.cc.toFixed(2) : '—'}</td>
+      </tr></tbody>
+    </table>
+    <div class="pdf-keep"><p style="font-size:8.5pt;margin:4px 0 2px 0;"><strong>Procedimiento:</strong></p>
+    <ol style="font-size:8pt;margin:0 0 6px 16px;padding:0;line-height:1.4;">${c.pasos.map(p => `<li>${p}</li>`).join("")}</ol></div>
+    ${img ? `<div style="text-align:center;margin:6px 0;background:#fff;border:1px solid #cbd5e1;border-radius:4px;padding:6px;"><img src="${img}" style="max-width:100%;height:auto;max-height:230px;" /></div>` : ""}
+  `;
+}
+
+// ===================================================================
+// 9C. LÓGICA DE ENSAYO 06: LÍMITES DE ATTERBERG (ASTM D4318 / NTP 339.129)
 // ===================================================================
 let attChartInstance = null;
 const ATT_LL_ROWS = 4;
@@ -2467,7 +2773,7 @@ function clasificarPlasticidad(ll, ip) {
   const lineaA = 0.73 * (ll - 20);
   let grupo;
   if (ip >= 4 && ip <= 7 && ip >= lineaA) grupo = "CL-ML";
-  else if (ip >= lineaA) grupo = ll < 50 ? "CL" : "CH";
+  else if (ip > lineaA && ip >= 4) grupo = ll < 50 ? "CL" : "CH";
   else grupo = ll < 50 ? "ML" : "MH";
   const nombre = { "CL": "Arcilla de baja plasticidad", "CH": "Arcilla de alta plasticidad", "ML": "Limo de baja plasticidad", "MH": "Limo de alta plasticidad", "CL-ML": "Limo arcilloso" }[grupo];
   let nivel;
@@ -2489,7 +2795,7 @@ function calcularAtterberg() {
       };
       renderResultadosAtterberg();
       updateDashboardAtterbergSummary();
-      refrescarClasificacionGranu();
+      sincronizarClasificacion();
       showToast("Suelo No Plástico (NP) registrado.");
       return;
     }
@@ -2550,17 +2856,11 @@ function calcularAtterberg() {
 
     renderResultadosAtterberg();
     updateDashboardAtterbergSummary();
-    refrescarClasificacionGranu();
+    sincronizarClasificacion();
     showToast(ll !== null ? `Límites calculados: LL = ${ll.toFixed(1)} %${ip !== null ? ` • IP = ${ip.toFixed(1)} %` : ""}` : "Límites calculados.");
   } catch (err) {
     alert("Error en datos de Límites de Atterberg:\n" + err.message);
   }
-}
-
-// Vuelve a mostrar la clasificación (se llama también al recalcular la granulometría)
-function refrescarClasificacionGranu() {
-  if (GeoState.ensayos.atterberg.calculado) renderResultadosAtterberg();
-  updateDashboardAtterbergSummary();
 }
 
 function renderResultadosAtterberg() {
@@ -2572,12 +2872,6 @@ function renderResultadosAtterberg() {
   const fmt = (v, d = 2) => (v === null || v === undefined) ? "—" : `${v.toFixed(d)} %`;
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
 
-  const cl = clasificarSuelo();
-  set("att-res-sucs", cl.ok ? cl.sucs.simbolo : "—");
-  set("att-res-sucs-desc", cl.ok ? cl.sucs.desc : "Requiere granulometría");
-  set("att-res-aashto", cl.ok ? cl.aashto.texto : "—");
-  set("att-res-aashto-desc", cl.ok ? `Grupo ${cl.aashto.grupo} • IG = ${cl.aashto.ig}` : "Requiere granulometría");
-  set("att-res-clasif-nota", cl.ok ? "Clasificación obtenida con la granulometría (Ensayo 04) y estos límites." : `⚠️ ${cl.motivo}`);
 
   if (a.np) {
     ["att-res-ll", "att-res-lp", "att-res-ip", "att-res-lc"].forEach(id => set(id, "NP"));
@@ -2678,7 +2972,7 @@ function limpiarAtterberg() {
   document.getElementById("att-results-placeholder").classList.remove("hidden");
   if (attChartInstance) { attChartInstance.destroy(); attChartInstance = null; }
   updateDashboardAtterbergSummary();
-  refrescarClasificacionGranu();
+  sincronizarClasificacion();
   showToast("Datos de Límites de Atterberg reiniciados.");
 }
 
@@ -2702,7 +2996,7 @@ function cargarDemoAtterberg() {
 }
 
 // ===================================================================
-// 9C. LÓGICA DE ENSAYO 06: COMPACTACIÓN PROCTOR (ASTM D698 / D1557 • NTP 339.141 / 339.142)
+// 9D. LÓGICA DE ENSAYO 07: COMPACTACIÓN PROCTOR (ASTM D698 / D1557 • NTP 339.141 / 339.142)
 // ===================================================================
 let proChartInstance = null;
 const PRO_ROWS = 5;
@@ -2956,12 +3250,9 @@ function updateDashboardAtterbergSummary() {
   if (prev) prev.textContent = !a.calculado ? "—" : (a.np ? "NP" : `LL ${a.ll !== null ? a.ll.toFixed(1) : "—"} • LP ${a.lp !== null ? a.lp.toFixed(1) : "—"} • IP ${a.ip !== null ? a.ip.toFixed(1) : "—"}`);
 
   if (!a.calculado) {
-    ["ll", "lp", "ip", "lc", "clase", "sucs", "aashto", "eq", "n"].forEach(k => setSummaryRow(`td-asum-${k}`, `td-astatus-${k}`, "—", false));
+    ["ll", "lp", "ip", "lc", "clase", "eq", "n"].forEach(k => setSummaryRow(`td-asum-${k}`, `td-astatus-${k}`, "—", false));
     return;
   }
-  const cls = clasificarSuelo();
-  setSummaryRow("td-asum-sucs", "td-astatus-sucs", cls.ok ? cls.sucs.simbolo : "—", cls.ok, "Clasificado", "Requiere granulometría");
-  setSummaryRow("td-asum-aashto", "td-astatus-aashto", cls.ok ? cls.aashto.texto : "—", cls.ok, "Clasificado", "Requiere granulometría");
   if (a.np) {
     ["ll", "lp", "ip", "lc"].forEach(k => setSummaryRow(`td-asum-${k}`, `td-astatus-${k}`, "NP", true, "No plástico"));
     setSummaryRow("td-asum-clase", "td-astatus-clase", "NP", true, "No plástico");
@@ -3430,6 +3721,20 @@ function generarPDFIndividual(tipo) {
   } else if (tipo === "granulometria") {
     generarPDFConsolidadoLab2();
     return;
+  } else if (tipo === "clasificacion") {
+    filename = `Informe_Clasificacion_SUCS_AASHTO_${GeoState.proyecto.muestra}.pdf`;
+    contentHTML = `
+      <div class="pdf-report-page">
+        <div class="pdf-header">
+          <div class="pdf-title-main">LABORATORIO DE MECÁNICA DE SUELOS • ING. GEOLÓGICA FIGMM</div>
+          <div class="pdf-title-sub">INFORME TÉCNICO: CLASIFICACIÓN DE SUELOS SUCS Y AASHTO</div>
+          <div class="pdf-norm-ref">Normas de referencia: ASTM D2487 / AASHTO M 145 • NTP 339.134</div>
+        </div>
+        ${getPlantillaMetadatosHTML()}
+        ${getSeccionPDFClasificacion("")}
+        ${getPlantillaFirmasHTML()}
+      </div>
+    `;
   } else if (tipo === "atterberg" || tipo === "proctor") {
     const esAtt = tipo === "atterberg";
     filename = `Informe_${esAtt ? "Limites_Atterberg" : "Proctor"}_${GeoState.proyecto.muestra}.pdf`;
@@ -3469,8 +3774,7 @@ function getSeccionPDFAtterberg(num) {
     return `<div class="pdf-section-title">${titulo}</div>
       <table class="pdf-data-table"><thead><tr><th>LL</th><th>LP</th><th>IP</th><th>LC</th></tr></thead>
       <tbody><tr><td style="text-align:center;font-weight:bold;">NP</td><td style="text-align:center;font-weight:bold;">NP</td><td style="text-align:center;font-weight:bold;">NP</td><td style="text-align:center;font-weight:bold;">NP</td></tr></tbody></table>
-      <p style="font-size:8.5pt;">Suelo No Plástico.${a.observaciones ? " " + a.observaciones : ""}</p>
-      ${(() => { const c = clasificarSuelo(); return c.ok ? `<p style="font-size:8.5pt;"><strong>SUCS:</strong> ${c.sucs.simbolo} — ${c.sucs.desc} &bull; <strong>AASHTO:</strong> ${c.aashto.texto}</p>` : ""; })()}`;
+      <p style="font-size:8.5pt;">Suelo No Plástico.${a.observaciones ? " " + a.observaciones : ""}</p>`;
   }
   const f = v => v === null ? "—" : `${v.toFixed(2)} %`;
   let img = "";
@@ -3494,7 +3798,6 @@ function getSeccionPDFAtterberg(num) {
         <td style="text-align:center;font-weight:bold;color:#1565c0;">${a.clase ? a.clase.grupo : "—"}</td>
       </tr></tbody>
     </table>
-    ${(() => { const c = clasificarSuelo(); return c.ok ? `<table class="pdf-data-table"><thead><tr><th>Clasificación SUCS (ASTM D2487)</th><th>Clasificación AASHTO (M 145)</th></tr></thead><tbody><tr><td style="text-align:center;font-weight:bold;color:#1565c0;">${c.sucs.simbolo} — ${c.sucs.desc}</td><td style="text-align:center;font-weight:bold;color:#1565c0;">${c.aashto.texto}</td></tr></tbody></table>` : `<p style="font-size:8pt;color:#b71c1c;margin:3px 0;">Clasificación SUCS / AASHTO: ${c.motivo}</p>`; })()}
     ${a.clase ? `<p style="font-size:8pt;color:#334155;margin:3px 0;"><strong>Plasticidad:</strong> ${a.clase.nombre} • ${a.clase.nivel} (carta de Casagrande)</p>` : ""}
     ${a.m !== null ? `<p style="font-size:8pt;color:#334155;margin:3px 0;"><strong>Línea de fluidez:</strong> w = ${a.m.toFixed(3)}·log₁₀(N) + ${a.b.toFixed(3)} (R² = ${a.r2.toFixed(4)}); LL = w a 25 golpes.</p>` : ""}
     ${filasLL ? `<table class="pdf-data-table"><thead><tr><th>Prueba LL</th><th>N.º golpes</th><th>Masa agua (g)</th><th>Masa suelo seco (g)</th><th>Humedad</th></tr></thead><tbody>${filasLL}</tbody></table>` : ""}
@@ -3971,8 +4274,8 @@ function ejecutarDescargaPDF(nombreArchivo) {
 
 // Informe GENERAL de resultados (todos los ensayos calculados en un solo PDF)
 function generarPDFGeneral() {
-  const { humedad, volumetrico, gravedad, granulometria, atterberg, proctor } = GeoState.ensayos;
-  const algo = humedad.calculado || volumetrico.calculado || gravedad.calculado || granulometria.calculado || atterberg.calculado || proctor.calculado;
+  const { humedad, volumetrico, gravedad, granulometria, clasificacion, atterberg, proctor } = GeoState.ensayos;
+  const algo = humedad.calculado || volumetrico.calculado || gravedad.calculado || granulometria.calculado || clasificacion.calculado || atterberg.calculado || proctor.calculado;
   if (!algo) {
     alert("Aún no hay resultados.\n\nCalcula al menos un ensayo (Humedad, Peso Volumétrico, Gravedad, Granulometría, Atterberg o Proctor) antes de generar el informe general.");
     return;
@@ -4045,8 +4348,9 @@ function generarPDFGeneral() {
       ${getPlantillaMetadatosHTML()}
       ${fisicasHTML}
       ${granuHTML}
-      ${getSeccionPDFAtterberg("3. ")}
-      ${getSeccionPDFProctor("4. ")}
+      ${getSeccionPDFClasificacion("3. ")}
+      ${getSeccionPDFAtterberg("4. ")}
+      ${getSeccionPDFProctor("5. ")}
       <div style="margin-top:28px;">${getPlantillaFirmasHTML()}</div>
     </div>
   `;

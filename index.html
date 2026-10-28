@@ -111,9 +111,11 @@
               class="badge-pending">Pendiente</strong></span>
           <span class="summary-pill" id="pill-summary-granu">04. Granulometría: <strong
               class="badge-pending">Pendiente</strong></span>
-          <span class="summary-pill" id="pill-summary-att">05. Atterberg: <strong
+          <span class="summary-pill" id="pill-summary-cls">05. Clasificación: <strong
               class="badge-pending">Pendiente</strong></span>
-          <span class="summary-pill" id="pill-summary-pro">06. Proctor: <strong
+          <span class="summary-pill" id="pill-summary-att">06. Atterberg: <strong
+              class="badge-pending">Pendiente</strong></span>
+          <span class="summary-pill" id="pill-summary-pro">07. Proctor: <strong
               class="badge-pending">Pendiente</strong></span>
         </div>
       </div>
@@ -446,7 +448,121 @@
       </div><!-- /lab2-panel-embedded -->
 
       <!-- ================================================================ -->
-      <!-- ENSAYOS 05 y 06: LÍMITES DE ATTERBERG Y PROCTOR (CUADROS APARTE) -->
+      <!-- ENSAYO 05: CLASIFICACIÓN SUCS Y AASHTO (CUADRO APARTE)           -->
+      <!-- ================================================================ -->
+      <div class="lab2-panel-embedded">
+
+        <div class="lab-divider">
+          <div class="divider-line"></div>
+        </div>
+
+        <div class="modules-grid">
+          <div class="module-card">
+            <div class="card-num">05</div>
+            <div class="card-status" id="badge-card-cls">Sin calcular</div>
+            <h3 class="card-title">Clasificación SUCS y AASHTO</h3>
+            <p class="card-norm">ASTM D2487 • AASHTO M 145 • NTP 339.134</p>
+            <p class="card-desc">Clasifica el suelo con la granulometría (N°4, N°10, N°40, N°200, Cu y Cc) y los límites
+              de Atterberg, e incluye la carta de plasticidad de Casagrande.</p>
+            <div class="card-result-preview" id="preview-res-cls">
+              <span class="preview-label">SUCS • AASHTO:</span>
+              <span class="preview-val" id="val-preview-cls">—</span>
+            </div>
+            <button class="btn btn-card" id="btn-goto-clasificacion">
+              <span>Abrir Ensayo 05 — Clasificación</span>
+              <span class="arrow">→</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="summary-section">
+          <div class="section-header-row">
+            <div>
+              <h3 class="section-title">Síntesis de la Clasificación de Suelos</h3>
+              <p class="section-subtitle">Resultado integrado de la clasificación SUCS y AASHTO</p>
+            </div>
+            <button class="btn btn-secondary-sm" id="btn-sync-cls">
+              <span class="icon">🔄</span> Sincronizar Clasificación
+            </button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table summary-table" id="table-summary-cls">
+              <thead>
+                <tr>
+                  <th>Parámetro</th>
+                  <th>Símbolo</th>
+                  <th>Valor Obtenido</th>
+                  <th>Unidad</th>
+                  <th>Norma / Método</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Clasificación SUCS</td>
+                  <td><strong>SUCS</strong></td>
+                  <td class="font-mono text-primary font-bold" id="td-csum-sucs">—</td>
+                  <td>símbolo</td>
+                  <td>ASTM D2487</td>
+                  <td id="td-cstatus-sucs"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Descripción del suelo</td>
+                  <td><strong>—</strong></td>
+                  <td class="font-mono font-bold" id="td-csum-desc">—</td>
+                  <td>—</td>
+                  <td>ASTM D2487</td>
+                  <td id="td-cstatus-desc"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Clasificación AASHTO</td>
+                  <td><strong>AASHTO</strong></td>
+                  <td class="font-mono text-primary font-bold" id="td-csum-aashto">—</td>
+                  <td>grupo (IG)</td>
+                  <td>AASHTO M 145</td>
+                  <td id="td-cstatus-aashto"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Índice de Grupo</td>
+                  <td><strong>IG</strong></td>
+                  <td class="font-mono font-bold" id="td-csum-ig">—</td>
+                  <td>—</td>
+                  <td>(F−35)[0.2+0.005(LL−40)] + 0.01(F−15)(IP−10)</td>
+                  <td id="td-cstatus-ig"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>% Pasante N°200 (finos)</td>
+                  <td><strong>F</strong></td>
+                  <td class="font-mono font-bold" id="td-csum-finos">—</td>
+                  <td>%</td>
+                  <td>Granulometría</td>
+                  <td id="td-cstatus-finos"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Límite Líquido / Índice Plástico</td>
+                  <td><strong>LL / IP</strong></td>
+                  <td class="font-mono font-bold" id="td-csum-lim">—</td>
+                  <td>%</td>
+                  <td>Límites de Atterberg</td>
+                  <td id="td-cstatus-lim"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Coeficientes de gradación</td>
+                  <td><strong>Cu / Cc</strong></td>
+                  <td class="font-mono font-bold" id="td-csum-gr">—</td>
+                  <td>—</td>
+                  <td>D60/D10 • D30²/(D60·D10)</td>
+                  <td id="td-cstatus-gr"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- /panel Clasificación -->
+
+      <!-- ================================================================ -->
+      <!-- ENSAYOS 06 y 07: LÍMITES DE ATTERBERG Y PROCTOR (CUADROS APARTE) -->
       <!-- ================================================================ -->
       <div class="lab2-panel-embedded">
 
@@ -457,7 +573,7 @@
         <div class="modules-grid">
           <!-- Tarjeta 5: Límites de Atterberg -->
           <div class="module-card">
-            <div class="card-num">05</div>
+            <div class="card-num">06</div>
             <div class="card-status" id="badge-card-att">Sin calcular</div>
             <h3 class="card-title">Límites de Atterberg</h3>
             <p class="card-norm">ASTM D4318 • NTP 339.129 • MTC E110 / E111</p>
@@ -468,14 +584,14 @@
               <span class="preview-val" id="val-preview-att">—</span>
             </div>
             <button class="btn btn-card" id="btn-goto-atterberg">
-              <span>Abrir Ensayo 05 — Atterberg</span>
+              <span>Abrir Ensayo 06 — Atterberg</span>
               <span class="arrow">→</span>
             </button>
           </div>
 
           <!-- Tarjeta 6: Proctor -->
           <div class="module-card">
-            <div class="card-num">06</div>
+            <div class="card-num">07</div>
             <div class="card-status" id="badge-card-pro">Sin calcular</div>
             <h3 class="card-title">Compactación Proctor</h3>
             <p class="card-norm">ASTM D698 / D1557 • NTP 339.141 / 339.142 • MTC E115 / E116</p>
@@ -486,7 +602,7 @@
               <span class="preview-val" id="val-preview-pro">—</span>
             </div>
             <button class="btn btn-card" id="btn-goto-proctor">
-              <span>Abrir Ensayo 06 — Proctor</span>
+              <span>Abrir Ensayo 07 — Proctor</span>
               <span class="arrow">→</span>
             </button>
           </div>
@@ -555,22 +671,6 @@
                   <td>—</td>
                   <td>Carta de plasticidad (línea A)</td>
                   <td id="td-astatus-clase"><span class="badge badge-pending">Sin procesar</span></td>
-                </tr>
-                <tr>
-                  <td>Clasificación SUCS</td>
-                  <td><strong>SUCS</strong></td>
-                  <td class="font-mono text-primary font-bold" id="td-asum-sucs">—</td>
-                  <td>—</td>
-                  <td>ASTM D2487 (granulometría + límites)</td>
-                  <td id="td-astatus-sucs"><span class="badge badge-pending">Sin procesar</span></td>
-                </tr>
-                <tr>
-                  <td>Clasificación AASHTO</td>
-                  <td><strong>AASHTO</strong></td>
-                  <td class="font-mono text-primary font-bold" id="td-asum-aashto">—</td>
-                  <td>grupo (IG)</td>
-                  <td>AASHTO M 145</td>
-                  <td id="td-astatus-aashto"><span class="badge badge-pending">Sin procesar</span></td>
                 </tr>
                 <tr>
                   <td>Ajuste de la Línea de Fluidez</td>
@@ -1758,7 +1858,170 @@
     </section>
 
     <!-- ================================================================ -->
-    <!-- VISTA: ENSAYO 05 — LÍMITES DE ATTERBERG                          -->
+    <!-- VISTA: ENSAYO 05 — CLASIFICACIÓN SUCS Y AASHTO                   -->
+    <!-- ================================================================ -->
+    <section class="view" id="view-clasificacion">
+      <div class="view-header-detail">
+        <button class="btn btn-secondary-sm btn-back-dashboard">
+          <span>← Volver al Panel</span>
+        </button>
+        <div class="detail-titles">
+          <span class="norm-tag">ASTM D2487 (SUCS) • AASHTO M 145</span>
+          <h2 class="view-title">05. Clasificación SUCS y AASHTO</h2>
+          <p class="view-desc">Clasifica el suelo con los % que pasan las mallas N°4, N°10, N°40 y N°200, los límites de
+            Atterberg y los coeficientes Cu y Cc. Los datos se traen solos de la Granulometría y de los Límites de
+            Atterberg, pero también puedes escribirlos a mano.</p>
+        </div>
+        <div class="header-tools">
+          <button class="btn btn-outline-sm" id="btn-fill-demo-cls">
+            <span>✨ Ejemplo</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="two-columns-layout">
+        <div class="col-inputs">
+
+          <div class="form-card">
+            <div class="card-head">
+              <span class="card-head-icon">🧪</span>
+              <h4 class="card-head-title">Datos de Granulometría</h4>
+            </div>
+            <p class="field-hint">Porcentaje que pasa cada malla (acumulado).</p>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="cls-p4">% Pasante malla N°4</label>
+                <div class="input-with-unit"><input type="number" step="0.01" id="cls-p4" class="input-control font-mono cls-in" placeholder="0.00"><span class="unit">%</span></div>
+              </div>
+              <div class="form-group">
+                <label for="cls-p10">% Pasante malla N°10</label>
+                <div class="input-with-unit"><input type="number" step="0.01" id="cls-p10" class="input-control font-mono cls-in" placeholder="0.00"><span class="unit">%</span></div>
+              </div>
+            </div>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="cls-p40">% Pasante malla N°40</label>
+                <div class="input-with-unit"><input type="number" step="0.01" id="cls-p40" class="input-control font-mono cls-in" placeholder="0.00"><span class="unit">%</span></div>
+              </div>
+              <div class="form-group">
+                <label for="cls-p200">% Pasante malla N°200</label>
+                <div class="input-with-unit"><input type="number" step="0.01" id="cls-p200" class="input-control font-mono cls-in" placeholder="0.00"><span class="unit">%</span></div>
+              </div>
+            </div>
+            <div class="form-grid-3" style="display:grid; grid-template-columns:repeat(3,1fr); gap:0.75rem;">
+              <div class="form-group">
+                <label for="cls-d60">D60 (mm)</label>
+                <input type="number" step="0.001" id="cls-d60" class="input-control font-mono cls-in cls-d" placeholder="—">
+              </div>
+              <div class="form-group">
+                <label for="cls-d30">D30 (mm)</label>
+                <input type="number" step="0.001" id="cls-d30" class="input-control font-mono cls-in cls-d" placeholder="—">
+              </div>
+              <div class="form-group">
+                <label for="cls-d10">D10 (mm)</label>
+                <input type="number" step="0.001" id="cls-d10" class="input-control font-mono cls-in cls-d" placeholder="—">
+              </div>
+            </div>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="cls-cu">Coef. de uniformidad, Cu</label>
+                <input type="number" step="0.01" id="cls-cu" class="input-control font-mono cls-in" placeholder="= D60 / D10">
+              </div>
+              <div class="form-group">
+                <label for="cls-cc">Coef. de curvatura, Cc</label>
+                <input type="number" step="0.01" id="cls-cc" class="input-control font-mono cls-in" placeholder="= D30² / (D60·D10)">
+              </div>
+            </div>
+            <p class="field-hint">Si escribes D60, D30 y D10, Cu y Cc se calculan solos. Con menos de 12 % de finos hacen falta.</p>
+          </div>
+
+          <div class="form-card">
+            <div class="card-head">
+              <span class="card-head-icon">💧</span>
+              <h4 class="card-head-title">Límites de Atterberg</h4>
+            </div>
+            <p class="field-hint">Si el suelo es no plástico (NP) deja LL, LP e IP en 0.</p>
+            <div class="form-grid-3" style="display:grid; grid-template-columns:repeat(3,1fr); gap:0.75rem;">
+              <div class="form-group">
+                <label for="cls-ll">Límite Líquido (LL)</label>
+                <input type="number" step="0.01" id="cls-ll" class="input-control font-mono cls-in" placeholder="0.00">
+              </div>
+              <div class="form-group">
+                <label for="cls-lp">Límite Plástico (LP)</label>
+                <input type="number" step="0.01" id="cls-lp" class="input-control font-mono cls-in" placeholder="0.00">
+              </div>
+              <div class="form-group">
+                <label for="cls-ip">Índice Plástico (IP)</label>
+                <input type="number" step="0.01" id="cls-ip" class="input-control font-mono cls-in" placeholder="= LL − LP">
+              </div>
+            </div>
+            <p class="field-hint">Si escribes LL y LP, el IP se calcula solo.</p>
+          </div>
+
+          <div class="action-buttons-row">
+            <button class="btn btn-primary" id="btn-calcular-cls">
+              <span class="btn-icon">⚡</span> Evaluar Clasificación
+            </button>
+            <button class="btn btn-outline" id="btn-traer-cls">
+              <span class="btn-icon">⬇️</span> Traer datos de los ensayos
+            </button>
+            <button class="btn btn-secondary" id="btn-limpiar-cls">
+              <span class="btn-icon">🗑</span> Limpiar Datos
+            </button>
+          </div>
+        </div>
+
+        <div class="col-results">
+          <div class="results-card">
+            <div class="results-head">
+              <span class="results-icon">📊</span>
+              <h3 class="results-title">Resultados de la Clasificación</h3>
+            </div>
+
+            <div id="cls-results-placeholder" class="results-empty">
+              <div class="empty-icon">🧭</div>
+              <p class="empty-title">Sin clasificación calculada</p>
+              <p class="empty-desc">Traiga los datos de los ensayos o escríbalos a la izquierda y presione
+                <strong>⚡ Evaluar Clasificación</strong>.</p>
+            </div>
+
+            <div id="cls-results-content" class="results-content-box hidden">
+              <div class="results-kpi-grid">
+                <div class="kpi-mini-card highlight">
+                  <span class="kpi-mini-label">SUCS (ASTM D2487)</span>
+                  <span class="kpi-mini-val font-mono text-primary" id="cls-res-sucs" style="font-size:1.4rem;">—</span>
+                  <span class="kpi-mini-sub" id="cls-res-sucs-desc">—</span>
+                </div>
+                <div class="kpi-mini-card highlight">
+                  <span class="kpi-mini-label">AASHTO (M 145)</span>
+                  <span class="kpi-mini-val font-mono text-accent" id="cls-res-aashto" style="font-size:1.4rem;">—</span>
+                  <span class="kpi-mini-sub" id="cls-res-aashto-desc">—</span>
+                </div>
+              </div>
+
+              <h4 class="sub-section-title">Cómo se llegó a la clasificación</h4>
+              <ol id="cls-res-pasos" style="margin:0 0 1rem 1.1rem; font-size:0.85rem; line-height:1.55;"></ol>
+
+              <h4 class="sub-section-title">Carta de Plasticidad de Casagrande (para finos)</h4>
+              <div
+                style="background: white; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 8px;">
+                <div style="position:relative; height:340px;"><canvas id="cls-chart"></canvas></div>
+              </div>
+              <p class="field-hint" id="cls-chart-nota"></p>
+            </div>
+
+            <div class="results-export-footer">
+              <button class="btn btn-export-single" id="btn-exportar-pdf-cls">
+                <span class="btn-icon">📄</span> Exportar este Ensayo (PDF)
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- VISTA: ENSAYO 06 — LÍMITES DE ATTERBERG                          -->
     <!-- ================================================================ -->
     <section class="view" id="view-atterberg">
       <div class="view-header-detail">
@@ -1767,7 +2030,7 @@
         </button>
         <div class="detail-titles">
           <span class="norm-tag">ASTM D4318 • NTP 339.129 • MTC E110 / E111</span>
-          <h2 class="view-title">05. Límites de Atterberg</h2>
+          <h2 class="view-title">06. Límites de Atterberg</h2>
           <p class="view-desc">Límite líquido (copa de Casagrande, diagrama de fluidez), límite plástico, índice de
             plasticidad y límite de contracción del suelo que pasa la malla N°40.</p>
         </div>
@@ -1905,20 +2168,6 @@
               </div>
 
               <div class="results-kpi-grid">
-                <div class="kpi-mini-card highlight">
-                  <span class="kpi-mini-label">CLASIFICACIÓN SUCS (ASTM D2487)</span>
-                  <span class="kpi-mini-val font-mono text-primary" id="att-res-sucs">—</span>
-                  <span class="kpi-mini-sub" id="att-res-sucs-desc">—</span>
-                </div>
-                <div class="kpi-mini-card highlight">
-                  <span class="kpi-mini-label">CLASIFICACIÓN AASHTO (M 145)</span>
-                  <span class="kpi-mini-val font-mono text-accent" id="att-res-aashto">—</span>
-                  <span class="kpi-mini-sub" id="att-res-aashto-desc">—</span>
-                </div>
-              </div>
-              <p class="field-hint" id="att-res-clasif-nota" style="margin:-6px 0 12px 0;"></p>
-
-              <div class="results-kpi-grid">
                 <div class="kpi-mini-card">
                   <span class="kpi-mini-label">LÍMITE LÍQUIDO (LL)</span>
                   <span class="kpi-mini-val font-mono text-accent" id="att-res-ll">—</span>
@@ -1995,7 +2244,7 @@
     </section>
 
     <!-- ================================================================ -->
-    <!-- VISTA: ENSAYO 06 — COMPACTACIÓN PROCTOR                          -->
+    <!-- VISTA: ENSAYO 07 — COMPACTACIÓN PROCTOR                          -->
     <!-- ================================================================ -->
     <section class="view" id="view-proctor">
       <div class="view-header-detail">
@@ -2004,7 +2253,7 @@
         </button>
         <div class="detail-titles">
           <span class="norm-tag">ASTM D698 / D1557 • NTP 339.141 / 339.142 • MTC E115 / E116</span>
-          <h2 class="view-title">06. Ensayo de Compactación (Proctor)</h2>
+          <h2 class="view-title">07. Ensayo de Compactación (Proctor)</h2>
           <p class="view-desc">Curva de compactación humedad vs. densidad seca, con máxima densidad seca (MDS) y
             contenido de humedad óptimo (OCH).</p>
         </div>
