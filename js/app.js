@@ -4245,6 +4245,10 @@ function ejecutarDescargaPDF(nombreArchivo) {
   showToast("Generando documento PDF oficial...");
 
   const element = document.getElementById("print-container");
+  // html2canvas desplaza la captura según el scroll de la ventana: se vuelve arriba mientras se genera
+  const scrollPrevio = window.scrollY;
+  window.scrollTo(0, 0);
+  const restaurarScroll = () => window.scrollTo(0, scrollPrevio);
   element.style.display = "block";
   prepararSaltosPDF(element);
 
@@ -4252,7 +4256,7 @@ function ejecutarDescargaPDF(nombreArchivo) {
     margin: [10, 12, 10, 12],
     filename: nombreArchivo,
     image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+    html2canvas: { scale: 2, useCORS: true, letterRendering: true, scrollX: 0, scrollY: 0 },
     jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
     pagebreak: { mode: ['css', 'legacy'], avoid: ['.pdf-keep', '.pdf-signatures', 'tr'] }
   };
@@ -4260,10 +4264,12 @@ function ejecutarDescargaPDF(nombreArchivo) {
   if (window.html2pdf) {
     html2pdf().set(opt).from(element).save().then(() => {
       element.style.display = "none";
+      restaurarScroll();
       showToast("¡PDF generado y descargado correctamente!");
     }).catch(err => {
       console.warn("Fallo html2pdf, abriendo diálogo nativo de impresión:", err);
       element.style.display = "none";
+      restaurarScroll();
       window.print();
     });
   } else {
