@@ -1332,8 +1332,8 @@ function updateDashboardPills() {
   // Ensayos 04, 05 y 06 (tarjetas con su propio resumen)
   const { granulometria, clasificacion, atterberg, proctor } = GeoState.ensayos;
   setBadge("pill-summary-granu", granulometria.calculado, `04. Granulometría: ${granulometria.calculado ? '✅' : '⏳'}`);
-  setBadge("pill-summary-cls", clasificacion.calculado, `05. Clasificación: ${clasificacion.calculado ? '✅' : '⏳'}`);
-  setBadge("pill-summary-att", atterberg.calculado, `06. Atterberg: ${atterberg.calculado ? '✅' : '⏳'}`);
+  setBadge("pill-summary-att", atterberg.calculado, `05. Atterberg: ${atterberg.calculado ? '✅' : '⏳'}`);
+  setBadge("pill-summary-cls", clasificacion.calculado, `06. Clasificación: ${clasificacion.calculado ? '✅' : '⏳'}`);
   setBadge("pill-summary-pro", proctor.calculado, `07. Proctor: ${proctor.calculado ? '✅' : '⏳'}`);
 
   const setCheck = (elId, status, text) => {
@@ -2340,7 +2340,7 @@ function cargarDemoGranuCompuesto() {
 }
 
 // ===================================================================
-// 9B. LÓGICA DE ENSAYO 05: CLASIFICACIÓN SUCS Y AASHTO (ASTM D2487 / AASHTO M 145)
+// 9B. LÓGICA DE ENSAYO 06: CLASIFICACIÓN SUCS Y AASHTO (ASTM D2487 / AASHTO M 145)
 //     Misma lógica que la clase ClasificacionSuelos del programa del curso.
 // ===================================================================
 let clsChartInstance = null;
@@ -2695,7 +2695,7 @@ function getSeccionPDFClasificacion(num) {
 }
 
 // ===================================================================
-// 9C. LÓGICA DE ENSAYO 06: LÍMITES DE ATTERBERG (ASTM D4318 / NTP 339.129)
+// 9C. LÓGICA DE ENSAYO 05: LÍMITES DE ATTERBERG (ASTM D4318 / NTP 339.129)
 // ===================================================================
 let attChartInstance = null;
 const ATT_LL_ROWS = 4;
@@ -4348,8 +4348,8 @@ function generarPDFGeneral() {
       ${getPlantillaMetadatosHTML()}
       ${fisicasHTML}
       ${granuHTML}
-      ${getSeccionPDFClasificacion("3. ")}
-      ${getSeccionPDFAtterberg("4. ")}
+      ${getSeccionPDFAtterberg("3. ")}
+      ${getSeccionPDFClasificacion("4. ")}
       ${getSeccionPDFProctor("5. ")}
       <div style="margin-top:28px;">${getPlantillaFirmasHTML()}</div>
     </div>
