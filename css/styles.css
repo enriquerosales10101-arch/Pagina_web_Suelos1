@@ -1643,3 +1643,20 @@ input.input-control[readonly] { background: var(--bg-card-alt, #f1f5f9); color: 
 #print-container .pdf-sig-box { text-align:center; width:45%; }
 #print-container .pdf-sig-line { border-top:1px solid #333333; margin-bottom:4px; }
 #print-container .pdf-sig-title { font-size:8.5pt; font-weight:bold; }
+
+/* ---- Botones "Sincronizar" y "Traer datos de los ensayos": bien visibles y en negrita ---- */
+.summary-section .btn-secondary-sm,
+#btn-traer-cls {
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.82rem;
+  padding: 0.5rem 0.95rem;
+  box-shadow: 0 2px 6px rgba(21, 101, 192, 0.35);
+}
+.summary-section .btn-secondary-sm:hover,
+#btn-traer-cls:hover {
+  background: var(--primary-hover, #0d47a1);
+  filter: brightness(1.08);
+}
