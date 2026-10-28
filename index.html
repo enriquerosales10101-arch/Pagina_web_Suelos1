@@ -313,10 +313,6 @@
             <div class="card-result-preview" id="preview-lab2-granu">
               <div class="preview-duo">
                 <div>
-                  <span class="preview-label">SUCS:</span>
-                  <span class="preview-val font-bold text-accent" id="val-preview-lab2-sucs-card">—</span>
-                </div>
-                <div>
                   <span class="preview-label">Grava / Arena / Finos:</span>
                   <span class="preview-val" id="val-preview-lab2-fracciones-card">—</span>
                 </div>
@@ -354,14 +350,6 @@
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>Clasificación SUCS</td>
-                  <td><strong>SUCS</strong></td>
-                  <td class="font-mono text-primary font-bold" id="td-gsum-sucs">—</td>
-                  <td>—</td>
-                  <td>ASTM D2487</td>
-                  <td id="td-gstatus-sucs"><span class="badge badge-pending">Sin procesar</span></td>
-                </tr>
                 <tr>
                   <td>Contenido de Grava</td>
                   <td><strong>G</strong></td>
@@ -427,20 +415,12 @@
                   <td id="td-gstatus-cc"><span class="badge badge-pending">Sin procesar</span></td>
                 </tr>
                 <tr>
-                  <td>Subfracciones de Arena (gruesa / media / fina)</td>
-                  <td><strong>S</strong></td>
-                  <td class="font-mono font-bold" id="td-gsum-arenas">—</td>
+                  <td>Humedad (fina / gruesa)</td>
+                  <td><strong>w</strong></td>
+                  <td class="font-mono font-bold" id="td-gsum-hum">—</td>
                   <td>%</td>
-                  <td>N°4–N°10 / N°10–N°40 / N°40–N°200</td>
-                  <td id="td-gstatus-arenas"><span class="badge badge-pending">Sin procesar</span></td>
-                </tr>
-                <tr>
-                  <td>Clasificación AASHTO</td>
-                  <td><strong>AASHTO</strong></td>
-                  <td class="font-mono text-primary font-bold" id="td-gsum-aashto">—</td>
-                  <td>grupo (IG)</td>
-                  <td>AASHTO M 145 (límites de Atterberg si existen)</td>
-                  <td id="td-gstatus-aashto"><span class="badge badge-pending">Sin procesar</span></td>
+                  <td>(M húmeda − M seca) / M seca</td>
+                  <td id="td-gstatus-hum"><span class="badge badge-pending">Sin procesar</span></td>
                 </tr>
                 <tr>
                   <td>Factor de Homogenización</td>
@@ -575,6 +555,22 @@
                   <td>—</td>
                   <td>Carta de plasticidad (línea A)</td>
                   <td id="td-astatus-clase"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Clasificación SUCS</td>
+                  <td><strong>SUCS</strong></td>
+                  <td class="font-mono text-primary font-bold" id="td-asum-sucs">—</td>
+                  <td>—</td>
+                  <td>ASTM D2487 (granulometría + límites)</td>
+                  <td id="td-astatus-sucs"><span class="badge badge-pending">Sin procesar</span></td>
+                </tr>
+                <tr>
+                  <td>Clasificación AASHTO</td>
+                  <td><strong>AASHTO</strong></td>
+                  <td class="font-mono text-primary font-bold" id="td-asum-aashto">—</td>
+                  <td>grupo (IG)</td>
+                  <td>AASHTO M 145</td>
+                  <td id="td-astatus-aashto"><span class="badge badge-pending">Sin procesar</span></td>
                 </tr>
                 <tr>
                   <td>Ajuste de la Línea de Fluidez</td>
@@ -1446,15 +1442,6 @@
                     name="granu-metodo" value="b-simple"> Método B — Tamizado Simple (T.M. &lt; N°4)</label>
               </div>
             </div>
-
-            <div class="form-group">
-              <label for="granu-hdr-humedad">% Humedad</label>
-              <div class="input-with-unit" style="max-width: 200px;">
-                <input type="number" step="0.01" id="granu-hdr-humedad" class="input-control font-mono"
-                  placeholder="Ej. 12.50">
-                <span class="unit">%</span>
-              </div>
-            </div>
           </div>
 
           <!-- CONTROL DE SECADO -->
@@ -1463,8 +1450,7 @@
               <span class="card-head-icon">🌡️</span>
               <h4 class="card-head-title">Control de Secado</h4>
             </div>
-            <p class="field-hint">Registro de secado en horno (12–16 h) para la parte gruesa y fina. Son datos del ensayo y
-              aparecen en el informe.</p>
+            <p class="field-hint">Pesadas de la parte gruesa y de la submuestra fina. La <strong>humedad se calcula sola</strong> con la masa húmeda y la masa seca de cada parte.</p>
 
             <h4 class="sub-section-title">Parte Gruesa</h4>
             <div class="table-responsive">
@@ -1486,24 +1472,17 @@
                         placeholder="0.00"></td>
                   </tr>
                   <tr>
-                    <td>Secado (12–16 h)</td>
+                    <td>Masa seca (tras secado 12–16 h)</td>
                     <td><input type="date" class="input-control" id="sec-g2-fecha"></td>
                     <td><input type="time" class="input-control" id="sec-g2-hora"></td>
                     <td><input type="number" step="0.01" class="input-control font-mono" id="sec-g2-masa"
                         placeholder="0.00"></td>
                   </tr>
                   <tr>
-                    <td>Masa seca</td>
+                    <td>Masa lavada y seca (12–16 h)</td>
                     <td><input type="date" class="input-control" id="sec-g3-fecha"></td>
                     <td><input type="time" class="input-control" id="sec-g3-hora"></td>
                     <td><input type="number" step="0.01" class="input-control font-mono" id="sec-g3-masa"
-                        placeholder="0.00"></td>
-                  </tr>
-                  <tr>
-                    <td>Lavado y secado (12–16 h)</td>
-                    <td><input type="date" class="input-control" id="sec-g4-fecha"></td>
-                    <td><input type="time" class="input-control" id="sec-g4-hora"></td>
-                    <td><input type="number" step="0.01" class="input-control font-mono" id="sec-g4-masa"
                         placeholder="0.00"></td>
                   </tr>
                 </tbody>
@@ -1530,24 +1509,17 @@
                         placeholder="0.00"></td>
                   </tr>
                   <tr>
-                    <td>Secado (12–16 h)</td>
+                    <td>Masa seca de la submuestra (Mo)</td>
                     <td><input type="date" class="input-control" id="sec-f2-fecha"></td>
                     <td><input type="time" class="input-control" id="sec-f2-hora"></td>
                     <td><input type="number" step="0.01" class="input-control font-mono" id="sec-f2-masa"
                         placeholder="0.00"></td>
                   </tr>
                   <tr>
-                    <td>Masa seca inicial (Mo)</td>
+                    <td>Masa lavada y seca (12–16 h)</td>
                     <td><input type="date" class="input-control" id="sec-f3-fecha"></td>
                     <td><input type="time" class="input-control" id="sec-f3-hora"></td>
                     <td><input type="number" step="0.01" class="input-control font-mono" id="sec-f3-masa"
-                        placeholder="0.00"></td>
-                  </tr>
-                  <tr>
-                    <td>Lavado y secado (12–16 h)</td>
-                    <td><input type="date" class="input-control" id="sec-f4-fecha"></td>
-                    <td><input type="time" class="input-control" id="sec-f4-hora"></td>
-                    <td><input type="number" step="0.01" class="input-control font-mono" id="sec-f4-masa"
                         placeholder="0.00"></td>
                   </tr>
                 </tbody>
@@ -1598,8 +1570,8 @@
               <h4 class="card-head-title">Tamizado Compuesto: Factor K automático</h4>
             </div>
             <p class="field-hint">Con el <strong>Método A Compuesto</strong> las masas salen de <strong>Datos del Ensayo</strong>
-              y <strong>Control de Secado</strong> (masa seca gruesa, masa seca de la submuestra fina Mo, masas lavadas y
-              % de humedad). El factor <strong>K = (Masa seca fina total + platillo de la columna 1 + M-Mo de la columna 1) ÷ suma de toda la
+              y <strong>Control de Secado</strong> (masa seca gruesa, masa seca de la submuestra fina Mo y masas lavadas).
+              La <strong>humedad no se escribe</strong>: el programa la halla con (masa húmeda − masa seca) ÷ masa seca de la submuestra fina y con ella pasa la masa húmeda de la parte fina a seca. El factor <strong>K = (Masa seca fina total + platillo de la columna 1 + M-Mo de la columna 1) ÷ suma de toda la
               columna 2</strong> se calcula solo. El <strong>platillo de la columna 1</strong> es lo que la parte gruesa
               dejó en la malla N°10 (y en el platillo); <strong>M-Mo (col. 1)</strong> = masa seca gruesa − masa seca lavada.
               K se aplica a la columna <strong>Masa 2</strong> y la fila <strong>M - Mo</strong> también se autocalcula.</p>
@@ -1691,13 +1663,6 @@
             </div>
 
             <div id="granu-results-content" class="results-content-box hidden">
-              <!-- KPI Principal Clasificación SUCS -->
-              <div class="kpi-banner">
-                <span class="kpi-label">CLASIFICACIÓN PRELIMINAR DEL SUELO (SUCS / ASTM D2487)</span>
-                <span class="kpi-value font-mono" id="granu-res-sucs-symbol">SW</span>
-                <span class="kpi-sub" id="granu-res-sucs-desc">Arena bien graduada con gravas</span>
-              </div>
-
               <!-- Mini KPIs Fracciones -->
               <div class="results-kpi-grid">
                 <div class="kpi-mini-card">
@@ -1736,19 +1701,14 @@
 
               <div class="results-kpi-grid">
                 <div class="kpi-mini-card">
-                  <span class="kpi-mini-label">SUBFRACCIONES DE ARENA (%)</span>
-                  <span class="kpi-mini-val font-mono" id="granu-res-arenas" style="font-size: 0.85rem;">—</span>
-                  <span class="kpi-mini-sub">N°4–N°10 • N°10–N°40 • N°40–N°200</span>
-                </div>
-                <div class="kpi-mini-card">
                   <span class="kpi-mini-label">FACTOR DE HOMOGENIZACIÓN</span>
                   <span class="kpi-mini-val font-mono text-primary" id="granu-res-k">—</span>
                   <span class="kpi-mini-sub" id="granu-res-k-sub">—</span>
                 </div>
                 <div class="kpi-mini-card highlight">
-                  <span class="kpi-mini-label">CLASIFICACIÓN AASHTO</span>
-                  <span class="kpi-mini-val font-mono text-accent" id="granu-res-aashto">—</span>
-                  <span class="kpi-mini-sub" id="granu-res-aashto-sub">—</span>
+                  <span class="kpi-mini-label">HUMEDAD (calculada)</span>
+                  <span class="kpi-mini-val font-mono text-accent" id="granu-res-hum" style="font-size: 0.9rem;">—</span>
+                  <span class="kpi-mini-sub" id="granu-res-hum-sub">—</span>
                 </div>
               </div>
 
@@ -1943,6 +1903,20 @@
                 <span class="kpi-value font-mono" id="att-res-class">—</span>
                 <span class="kpi-sub" id="att-res-class-desc">—</span>
               </div>
+
+              <div class="results-kpi-grid">
+                <div class="kpi-mini-card highlight">
+                  <span class="kpi-mini-label">CLASIFICACIÓN SUCS (ASTM D2487)</span>
+                  <span class="kpi-mini-val font-mono text-primary" id="att-res-sucs">—</span>
+                  <span class="kpi-mini-sub" id="att-res-sucs-desc">—</span>
+                </div>
+                <div class="kpi-mini-card highlight">
+                  <span class="kpi-mini-label">CLASIFICACIÓN AASHTO (M 145)</span>
+                  <span class="kpi-mini-val font-mono text-accent" id="att-res-aashto">—</span>
+                  <span class="kpi-mini-sub" id="att-res-aashto-desc">—</span>
+                </div>
+              </div>
+              <p class="field-hint" id="att-res-clasif-nota" style="margin:-6px 0 12px 0;"></p>
 
               <div class="results-kpi-grid">
                 <div class="kpi-mini-card">
